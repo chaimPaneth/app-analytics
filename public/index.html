@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Analytics Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid #d2d2d7;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .store-tabs {
+      display: flex;
+      gap: 4px;
+      background: #f0f0f5;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .store-tab {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #86868b;
+      transition: all 0.2s;
+    }
+
+    .store-tab.active {
+      background: #fff;
+      color: #1d1d1f;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .store-tab:hover:not(.active) { color: #1d1d1f; }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .status-dot.ok { background: #34c759; }
+    .status-dot.off { background: #d2d2d7; }
+
+    /* ── Main ──────────────────────────── */
+    main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+    /* ── Controls ──────────────────────── */
+    .controls {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .control-group { display: flex; flex-direction: column; gap: 4px; }
+    .control-group label { font-size: 11px; font-weight: 600; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .control-group input, .control-group select {
+      padding: 8px 12px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .control-group input:focus, .control-group select:focus {
+      border-color: #007AFF;
+    }
+
+    .presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 8px 14px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      color: #1d1d1f;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .preset-btn:hover { background: #f0f0f5; }
+    .preset-btn.active { background: #007AFF; color: #fff; border-color: #007AFF; }
+
+    .fetch-btn {
+      padding: 8px 24px;
+      background: #007AFF;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-left: auto;
+    }
+
+    .fetch-btn:hover { background: #0056CC; }
+    .fetch-btn:disabled { background: #d2d2d7; cursor: not-allowed; }
+
+    /* ── Stats Cards ──────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1d1d1f;
+      line-height: 1;
+    }
+
+    .stat-card .sub {
+      font-size: 13px;
+      color: #86868b;
+      margin-top: 6px;
+    }
+
+    /* ── Table ─────────────────────────── */
+    .table-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .table-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #f0f0f5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-header h2 { font-size: 17px; font-weight: 600; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      padding: 12px 24px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #f0f0f5;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: #1d1d1f; }
+
+    td {
+      padding: 14px 24px;
+      font-size: 14px;
+      border-bottom: 1px solid #f5f5f7;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .app-name {
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .app-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #007AFF, #5856D6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── Country Pills ────────────────── */
+    .countries-section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      margin-bottom: 20px;
+    }
+
+    .countries-section h2 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+
+    .country-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .country-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: #f0f0f5;
+      font-size: 13px;
+    }
+
+    .country-pill .flag { font-size: 16px; }
+    .country-pill .count { font-weight: 600; }
+
+    /* ── Loading / Empty ──────────────── */
+    .loading {
+      text-align: center;
+      padding: 60px 24px;
+      color: #86868b;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #f0f0f5;
+      border-top-color: #007AFF;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty { text-align: center; padding: 40px; color: #86868b; }
+
+    .error-banner {
+      background: #fff2f2;
+      border: 1px solid #ffcdd2;
+      color: #c62828;
+      padding: 12px 20px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    /* ── Apps List (initial) ──────────── */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .app-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .app-card .app-icon {
+      width: 44px;
+      height: 44px;
+      font-size: 18px;
+    }
+
+    .app-card .info h3 { font-size: 15px; font-weight: 500; }
+    .app-card .info p { font-size: 12px; color: #86868b; margin-top: 2px; }
+
+    /* ── Responsive ────────────────────── */
+    @media (max-width: 768px) {
+      header { padding: 16px; flex-direction: column; gap: 12px; }
+      main { padding: 16px; }
+      .controls { flex-direction: column; }
+      .fetch-btn { margin-left: 0; width: 100%; }
+      th, td { padding: 10px 14px; }
+    }
+
+    /* ── Google placeholder ────────────── */
+    .coming-soon {
+      text-align: center;
+      padding: 80px 24px;
+      color: #86868b;
+    }
+
+    .coming-soon h2 { font-size: 24px; margin-bottom: 8px; color: #1d1d1f; }
+    .coming-soon p { font-size: 15px; }
+
+    /* ── Expand row details ───────────── */
+    .country-details {
+      display: none;
+      background: #fafafa;
+    }
+    .country-details.open { display: table-row; }
+    .country-details td { padding: 10px 24px 14px 68px; }
+    .mini-countries { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mini-country { font-size: 12px; color: #86868b; }
+    .mini-country span { color: #1d1d1f; font-weight: 500; }
+    .expand-btn {
+      background: none; border: none; cursor: pointer;
+      color: #007AFF; font-size: 12px; padding: 2px 6px; border-radius: 4px;
+    }
+    .expand-btn:hover { background: #f0f0f5; }
+
+    /* ── Progress Bar ─────────────────── */
+    .progress-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: linear-gradient(90deg, #007AFF, #5856D6, #007AFF);
+      background-size: 200% 100%;
+      width: 0%;
+      transition: width 0.4s ease;
+      animation: shimmer 2s linear infinite;
+    }
+
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .progress-status {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 199;
+      display: none;
+    }
+
+    .progress-status-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 68px 24px 0;
+    }
+
+    .progress-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-left: 4px solid #007AFF;
+    }
+
+    .progress-card .progress-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid #f0f0f5;
+      border-top-color: #007AFF;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    .progress-card .progress-text {
+      flex: 1;
+    }
+
+    .progress-card .progress-phase {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 2px;
+    }
+
+    .progress-card .progress-message {
+      font-size: 13px;
+      color: #86868b;
+    }
+
+    .progress-card .progress-pct {
+      font-size: 22px;
+      font-weight: 700;
+      color: #007AFF;
+      font-variant-numeric: tabular-nums;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    .progress-card .progress-elapsed {
+      font-size: 12px;
+      color: #86868b;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* ── Setup Wizard ─────────────────── */
+    .setup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #f5f5f7;
+      z-index: 300;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .setup-overlay.active { display: block; }
+
+    .setup-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    .setup-header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .setup-header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .setup-header p { font-size: 15px; color: #86868b; }
+
+    .setup-section {
+      background: #fff;
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    .setup-section h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setup-section .subtitle {
+      font-size: 13px;
+      color: #86868b;
+      margin-bottom: 16px;
+    }
+
+    .setup-field {
+      margin-bottom: 14px;
+    }
+
+    .setup-field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+    }
+
+    .setup-field input[type="text"],
+    .setup-field textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #f9f9fb;
+      color: #1d1d1f;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .setup-field input:focus,
+    .setup-field textarea:focus {
+      border-color: #007AFF;
+    }
+
+    .setup-field textarea {
+      min-height: 100px;
+      font-family: monospace;
+      font-size: 12px;
+      resize: vertical;
+    }
+
+    .setup-field .hint {
+      font-size: 12px;
+      color: #86868b;
+      margin-top: 4px;
+    }
+
+    .setup-file-drop {
+      border: 2px dashed #d2d2d7;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 14px;
+    }
+
+    .setup-file-drop:hover,
+    .setup-file-drop.dragover {
+      border-color: #007AFF;
+      background: #f0f4ff;
+    }
+
+    .setup-file-drop.has-file {
+      border-color: #34c759;
+      background: #f0fdf4;
+    }
+
+    .setup-file-drop .drop-label {
+      font-size: 14px;
+      color: #86868b;
+    }
+
+    .setup-file-drop .drop-label strong { color: #007AFF; }
+    .setup-file-drop .file-name { font-size: 13px; color: #34c759; font-weight: 600; margin-top: 6px; }
+
+    .setup-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .setup-btn {
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .setup-btn-primary {
+      background: #007AFF;
+      color: #fff;
+    }
+
+    .setup-btn-primary:hover { background: #0056CC; }
+    .setup-btn-primary:disabled { background: #d2d2d7; cursor: not-allowed; }
+
+    .setup-btn-secondary {
+      background: #f0f0f5;
+      color: #1d1d1f;
+    }
+
+    .setup-btn-secondary:hover { background: #e5e5ea; }
+
+    .setup-btn-success {
+      background: #34c759;
+      color: #fff;
+    }
+
+    .setup-result {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+    }
+
+    .setup-result.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+    .setup-result.err { background: #fff2f2; color: #c62828; display: block; }
+
+    .setup-skip {
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .setup-skip a {
+      color: #86868b;
+      font-size: 13px;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .settings-btn {
+      background: none;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #86868b;
+      transition: all 0.2s;
+    }
+
+    .settings-btn:hover { background: #f0f0f5; color: #1d1d1f; }
+  </style>
+</head>
+<body>
+
+  <!-- Setup Wizard Overlay -->
+  <div class="setup-overlay" id="setup-overlay">
+    <div class="setup-container">
+      <div class="setup-header">
+        <h1>Welcome to App Analytics</h1>
+        <p>Configure your Apple App Store and/or Google Play credentials to get started.</p>
+      </div>
+
+      <!-- Apple Setup -->
+      <div class="setup-section">
+        <h2>🍎 Apple App Store Connect</h2>
+        <p class="subtitle">Get credentials from <a href="https://appstoreconnect.apple.com/access/integrations/api" target="_blank">App Store Connect → Keys</a></p>
+
+        <div class="setup-field">
+          <label>Issuer ID</label>
+          <input type="text" id="setup-apple-issuer" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+          <div class="hint">Found at the top of the Keys page in App Store Connect</div>
+        </div>
+
+        <div class="setup-field">
+          <label>Key ID</label>
+          <input type="text" id="setup-apple-keyid" placeholder="ABC1234DEF">
+          <div class="hint">The ID of your API key</div>
+        </div>
+
+        <div class="setup-field">
+          <label>Vendor Number</label>
+          <input type="text" id="setup-apple-vendor" placeholder="12345678">
+          <div class="hint">Found in App Store Connect → Sales and Trends → top-right dropdown</div>
+        </div>
+
+        <div class="setup-field">
+          <label>API Key File (.p8)</label>
+          <div class="setup-file-drop" id="apple-key-drop"
+               ondragover="event.preventDefault(); this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleFileDrop(event, 'apple')"
+               onclick="document.getElementById('apple-key-input').click()">
+            <div class="drop-label">
+              <strong>Click to upload</strong> or drag & drop your .p8 key file
+            </div>
+            <div class="file-name" id="apple-key-filename"></div>
+          </div>
+          <input type="file" id="apple-key-input" accept=".p8" style="display:none" onchange="handleFileSelect(this, 'apple')">
+        </div>
+
+        <div class="setup-actions">
+          <button class="setup-btn setup-btn-primary" onclick="saveAppleConfig()">Save Apple Config</button>
+          <button class="setup-btn setup-btn-secondary" onclick="testAppleConfig()">Test Connection</button>
+        </div>
+        <div class="setup-result" id="apple-setup-result"></div>
+      </div>
+
+      <!-- Google Setup -->
+      <div class="setup-section">
+        <h2>🤖 Google Play</h2>
+        <p class="subtitle">Requires a <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank">Google Cloud service account</a> with Play Console access + <code>gsutil</code> CLI</p>
+
+        <div class="setup-field">
+          <label>Developer ID</label>
+          <input type="text" id="setup-google-devid" placeholder="12345678901234567890">
+          <div class="hint">Numeric ID from your Play Console URL: play.google.com/console/developers/<strong>DEVELOPER_ID</strong></div>
+        </div>
+
+        <div class="setup-field">
+          <label>Service Account Key (JSON)</label>
+          <div class="setup-file-drop" id="google-key-drop"
+               ondragover="event.preventDefault(); this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleFileDrop(event, 'google')"
+               onclick="document.getElementById('google-key-input').click()">
+            <div class="drop-label">
+              <strong>Click to upload</strong> or drag & drop your service account JSON key
+            </div>
+            <div class="file-name" id="google-key-filename"></div>
+          </div>
+          <input type="file" id="google-key-input" accept=".json" style="display:none" onchange="handleFileSelect(this, 'google')">
+        </div>
+
+        <div class="setup-field">
+          <label>Package Names <span style="color:#86868b;font-weight:400">(optional)</span></label>
+          <input type="text" id="setup-google-packages" placeholder="com.example.app1, com.example.app2">
+          <div class="hint">Comma-separated. Usually auto-detected from GCS bucket data.</div>
+        </div>
+
+        <div style="background:#f5f5f7;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px">gsutil Setup (required for Google Play data)</div>
+          <div style="font-family:monospace;font-size:12px;line-height:1.8;color:#555">
+            brew install google-cloud-sdk<br>
+            gcloud init && gcloud auth login
+          </div>
+          <div style="font-size:12px;color:#86868b;margin-top:4px">The authenticated account must have Play Console access.</div>
+        </div>
+
+        <div class="setup-actions">
+          <button class="setup-btn setup-btn-primary" onclick="saveGoogleConfig()">Save Google Config</button>
+          <button class="setup-btn setup-btn-secondary" onclick="testGoogleConfig()">Test Connection</button>
+        </div>
+        <div class="setup-result" id="google-setup-result"></div>
+      </div>
+
+      <div style="text-align:center;margin-top:24px">
+        <button class="setup-btn setup-btn-success" onclick="finishSetup()" style="padding:12px 40px;font-size:16px">
+          Launch Dashboard →
+        </button>
+      </div>
+      <div class="setup-skip">
+        <a onclick="finishSetup()">Skip setup for now</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-container" id="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
+  </div>
+  <div class="progress-status" id="progress-status">
+    <div class="progress-status-inner">
+      <div class="progress-card">
+        <div class="progress-spinner"></div>
+        <div class="progress-text">
+          <div class="progress-phase" id="progress-phase">Loading...</div>
+          <div class="progress-message" id="progress-message"></div>
+        </div>
+        <div class="progress-pct" id="progress-pct"></div>
+        <div class="progress-elapsed" id="progress-elapsed"></div>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <h1>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m18 20 0-12"/><path d="M6 20V4"/></svg>
+      App Analytics
+    </h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="store-tabs">
+        <button class="store-tab active" onclick="switchStore('apple')">
+          <span class="status-dot" id="apple-dot"></span>
+          Apple App Store
+        </button>
+        <button class="store-tab" onclick="switchStore('google')">
+          <span class="status-dot" id="google-dot"></span>
+          Google Play
+        </button>
+      </div>
+      <button class="settings-btn" onclick="openSetup()">⚙ Settings</button>
+    </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── Shared Controls ────────────────── -->
+    <div class="controls">
+      <div class="control-group">
+        <label>Quick Select</label>
+        <div class="presets">
+          <button class="preset-btn active" data-preset="latest" onclick="setPreset(this)">Latest Day</button>
+          <button class="preset-btn" data-preset="7days" onclick="setPreset(this)">Last 7 Days</button>
+          <button class="preset-btn" data-preset="30days" onclick="setPreset(this)">Last 30 Days</button>
+          <button class="preset-btn" data-preset="thismonth" onclick="setPreset(this)">This Month</button>
+          <button class="preset-btn" data-preset="lastmonth" onclick="setPreset(this)">Last Month</button>
+          <button class="preset-btn" data-preset="alltime" onclick="setPreset(this)">All Time</button>
+          <button class="preset-btn" data-preset="custom" onclick="setPreset(this)">Custom</button>
+        </div>
+      </div>
+
+      <div class="control-group" id="date-from-group" style="display:none">
+        <label>From</label>
+        <input type="date" id="date-from">
+      </div>
+      <div class="control-group" id="date-to-group" style="display:none">
+        <label>To</label>
+        <input type="date" id="date-to">
+      </div>
+
+      <button class="fetch-btn" id="fetch-btn" onclick="fetchDownloads()">
+        Fetch Downloads
+      </button>
+    </div>
+
+    <div id="error-banner" class="error-banner" style="display:none"></div>
+
+    <!-- ── Shared Stats Cards ─────────────── -->
+    <div class="stats-grid" id="stats-grid" style="display:none">
+      <div class="stat-card">
+        <div class="label">Total Downloads</div>
+        <div class="value" id="total-downloads">—</div>
+        <div class="sub" id="period-label"></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Total Updates</div>
+        <div class="value" id="total-updates">—</div>
+      </div>
+      <div class="stat-card" id="card-redownloads" style="display:none">
+        <div class="label">Re-Downloads</div>
+        <div class="value" id="total-redownloads">—</div>
+      </div>
+      <div class="stat-card" id="card-uninstalls" style="display:none">
+        <div class="label">Uninstalls</div>
+        <div class="value" id="total-uninstalls">—</div>
+      </div>
+      <div class="stat-card" id="card-iap" style="display:none">
+        <div class="label">In-App Purchases</div>
+        <div class="value" id="total-iap">—</div>
+      </div>
+      <div class="stat-card" id="card-proceeds" style="display:none">
+        <div class="label">Proceeds</div>
+        <div class="value" id="total-proceeds">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Apps With Downloads</div>
+        <div class="value" id="app-count">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Top Country</div>
+        <div class="value" id="top-country">—</div>
+        <div class="sub" id="top-country-count"></div>
+      </div>
+    </div>
+
+    <!-- ── Shared Downloads Table ─────────── -->
+    <div class="table-card" id="downloads-table" style="display:none">
+      <div class="table-header">
+        <h2>Downloads by App</h2>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30%">App</th>
+            <th class="num">Downloads</th>
+            <th class="num">Updates</th>
+            <th class="num" id="th-extra" style="display:none">—</th>
+            <th class="num">Top Country</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="downloads-body"></tbody>
+      </table>
+    </div>
+
+    <!-- ── Shared Top Countries ───────────── -->
+    <div class="countries-section" id="countries-section" style="display:none">
+      <h2>Top Countries</h2>
+      <div class="country-pills" id="country-pills"></div>
+    </div>
+
+    <!-- ── Apple Apps List ────────────────── -->
+    <div id="apple-panel">
+      <div class="table-card" id="apple-apps-section">
+        <div class="table-header">
+          <h2>Your Apple Apps</h2>
+          <span id="apple-apps-count" style="color:#86868b;font-size:14px"></span>
+        </div>
+        <div id="apple-apps-list" class="loading">
+          <div class="spinner"></div>
+          Loading your apps...
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Google Play Apps List ──────────── -->
+    <div id="google-panel" style="display:none">
+      <!-- gsutil Setup Info (hidden when connected, shown on error) -->
+      <div id="gsutil-info" style="display:none;background:#fff;border-radius:12px;padding:16px 24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04);align-items:flex-start;gap:14px;border-left:4px solid #007AFF">
+        <div style="font-size:22px;margin-top:2px">☁️</div>
+        <div style="flex:1">
+          <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">Google Play data via GCS Bucket</h3>
+          <p style="color:#86868b;font-size:13px;line-height:1.5;margin:0">
+            Download stats are fetched automatically from your Play Console's GCS bucket using <strong>gsutil</strong>.
+            Requires <code style="background:#f0f0f5;padding:1px 5px;border-radius:4px;font-size:12px">gcloud</code> CLI installed and authenticated:
+          </p>
+          <div style="margin-top:8px;background:#f5f5f7;border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;line-height:1.6;color:#1d1d1f">
+            <span style="color:#86868b"># Install gcloud CLI (if not installed)</span><br>
+            brew install google-cloud-sdk<br><br>
+            <span style="color:#86868b"># Login with a Google account that has Play Console access</span><br>
+            gcloud init<br>
+            gcloud auth login
+          </div>
+          <p style="color:#86868b;font-size:12px;line-height:1.5;margin-top:8px">
+            The authenticated Google account must have access to the Play Console with permission to view reports.
+          </p>
+        </div>
+        <div id="gcs-status-badge" style="display:none;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:#e8f5e9;font-size:13px;color:#2e7d32;white-space:nowrap">
+          <span class="status-dot ok"></span> Connected
+        </div>
+      </div>
+
+      <div class="table-card" id="google-apps-section">
+        <div class="table-header">
+          <h2>Your Google Play Apps</h2>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span id="google-data-through" style="display:none;font-size:12px;color:#86868b;background:#f5f5f7;padding:4px 10px;border-radius:6px"></span>
+            <span id="google-apps-count" style="color:#86868b;font-size:14px"></span>
+          </div>
+        </div>
+        <div id="google-apps-list" class="loading">
+          <div class="spinner"></div>
+          Loading your apps...
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+// ── State ─────────────────────────────────
+let currentStore = 'apple';
+let currentPreset = 'latest';
+let appleAppsData = [];
+let googleAppsData = [];
+let googleSource = 'auto'; // always 'auto' (GCS via gsutil)
+let googleLatestDate = null; // latest date with available Google Play data
+let progressTimer = null;
+let progressStartTime = null;
+
+// Cache last fetch per store so switching tabs doesn't re-fetch
+const storeCache = { apple: null, google: null };
+
+// Uploaded file contents (held in memory until saved)
+let appleKeyContent = null;
+let appleKeyFileName = null;
+let googleKeyContent = null;
+
+// ── Setup Wizard ─────────────────────────
+function openSetup() {
+  document.getElementById('setup-overlay').classList.add('active');
+  loadExistingConfig();
+}
+
+function finishSetup() {
+  document.getElementById('setup-overlay').classList.remove('active');
+  // Reload everything
+  storeCache.apple = null;
+  storeCache.google = null;
+  checkStatus();
+  loadAppleApps();
+  loadGoogleApps();
+  fetchDownloads();
+}
+
+async function loadExistingConfig() {
+  try {
+    const res = await fetch('/api/config');
+    const config = await res.json();
+    if (config.apple.issuerId) document.getElementById('setup-apple-issuer').value = config.apple.issuerId;
+    if (config.apple.keyId) document.getElementById('setup-apple-keyid').value = config.apple.keyId;
+    if (config.apple.vendorNumber) document.getElementById('setup-apple-vendor').value = config.apple.vendorNumber;
+    if (config.apple.hasKeyFile) {
+      const drop = document.getElementById('apple-key-drop');
+      drop.classList.add('has-file');
+      document.getElementById('apple-key-filename').textContent = '✓ Key file already uploaded';
+    }
+    if (config.google.developerId) document.getElementById('setup-google-devid').value = config.google.developerId;
+    if (config.google.packages) document.getElementById('setup-google-packages').value = config.google.packages;
+    if (config.google.hasServiceAccount) {
+      const drop = document.getElementById('google-key-drop');
+      drop.classList.add('has-file');
+      document.getElementById('google-key-filename').textContent = '✓ Service account already uploaded';
+    }
+  } catch (_) {}
+}
+
+function handleFileDrop(e, type) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) readUploadedFile(file, type);
+}
+
+function handleFileSelect(input, type) {
+  const file = input.files[0];
+  if (file) readUploadedFile(file, type);
+}
+
+function readUploadedFile(file, type) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const content = e.target.result;
+    if (type === 'apple') {
+      appleKeyContent = content;
+      appleKeyFileName = file.name;
+      const drop = document.getElementById('apple-key-drop');
+      drop.classList.add('has-file');
+      document.getElementById('apple-key-filename').textContent = `✓ ${file.name}`;
+    } else {
+      googleKeyContent = content;
+      const drop = document.getElementById('google-key-drop');
+      drop.classList.add('has-file');
+      document.getElementById('google-key-filename').textContent = `✓ ${file.name}`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function saveAppleConfig() {
+  const resultEl = document.getElementById('apple-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.style.display = 'none';
+
+  const issuerId = document.getElementById('setup-apple-issuer').value.trim();
+  const keyId = document.getElementById('setup-apple-keyid').value.trim();
+  const vendorNumber = document.getElementById('setup-apple-vendor').value.trim();
+
+  if (!issuerId || !keyId || !vendorNumber) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = 'All fields are required.';
+    return;
+  }
+
+  try {
+    // Save config
+    let res = await fetch('/api/config/apple', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issuerId, keyId, vendorNumber }),
+    });
+    let data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Upload key if provided
+    if (appleKeyContent) {
+      res = await fetch('/api/config/apple/key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyContent: appleKeyContent, fileName: appleKeyFileName }),
+      });
+      data = await res.json();
+      if (data.error) throw new Error(data.error);
+    }
+
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = 'Apple configuration saved!';
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
+async function testAppleConfig() {
+  const resultEl = document.getElementById('apple-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.textContent = 'Testing...';
+  resultEl.style.display = 'block';
+  resultEl.style.background = '#f5f5f7';
+  resultEl.style.color = '#86868b';
+
+  try {
+    const res = await fetch('/api/config/test/apple', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = data.message;
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
+async function saveGoogleConfig() {
+  const resultEl = document.getElementById('google-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.style.display = 'none';
+
+  const developerId = document.getElementById('setup-google-devid').value.trim();
+  const packages = document.getElementById('setup-google-packages').value.trim();
+
+  if (!developerId) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = 'Developer ID is required.';
+    return;
+  }
+
+  try {
+    let res = await fetch('/api/config/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ developerId, packages }),
+    });
+    let data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    if (googleKeyContent) {
+      res = await fetch('/api/config/google/service-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyContent: googleKeyContent }),
+      });
+      data = await res.json();
+      if (data.error) throw new Error(data.error);
+    }
+
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = 'Google configuration saved!';
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
+async function testGoogleConfig() {
+  const resultEl = document.getElementById('google-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.textContent = 'Testing...';
+  resultEl.style.display = 'block';
+  resultEl.style.background = '#f5f5f7';
+  resultEl.style.color = '#86868b';
+
+  try {
+    const res = await fetch('/api/config/test/google', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = data.message;
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
+// ── Country code → flag emoji ────────────
+function flag(code) {
+  if (!code || code.length !== 2) return '🌍';
+  return String.fromCodePoint(
+    ...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
+  );
+}
+
+// ── Commas for numbers ───────────────────
+function fmt(n) {
+  return (n || 0).toLocaleString();
+}
+
+// ── Color from app name ─────────────────
+const palette = ['#007AFF','#34C759','#FF9500','#FF3B30','#AF52DE','#5856D6','#FF2D55','#00C7BE','#FFD60A','#5AC8FA'];
+function appColor(name) {
+  let hash = 0;
+  for (const c of name) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
+  return palette[Math.abs(hash) % palette.length];
+}
+
+// ── Store tab switch ────────────────────
+function switchStore(store) {
+  currentStore = store;
+  document.querySelectorAll('.store-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.store-tab[onclick="switchStore('${store}')"]`).classList.add('active');
+  document.getElementById('apple-panel').style.display = store === 'apple' ? '' : 'none';
+  document.getElementById('google-panel').style.display = store === 'google' ? '' : 'none';
+
+  // Show cached data for this store, or clear and auto-fetch
+  if (storeCache[store]) {
+    renderData(storeCache[store]);
+  } else {
+    // Clear shared stats when switching
+    document.getElementById('stats-grid').style.display = 'none';
+    document.getElementById('downloads-table').style.display = 'none';
+    document.getElementById('countries-section').style.display = 'none';
+    document.getElementById('error-banner').style.display = 'none';
+    fetchDownloads();
+  }
+}
+
+// ── Preset buttons ──────────────────────
+function setPreset(btn) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPreset = btn.dataset.preset;
+
+  const showCustom = currentPreset === 'custom';
+  document.getElementById('date-from-group').style.display = showCustom ? '' : 'none';
+  document.getElementById('date-to-group').style.display = showCustom ? '' : 'none';
+}
+
+// ── Date helpers ────────────────────────
+function dateStr(d) { return d.toISOString().split('T')[0]; }
+
+function getPresetDates() {
+  const today = new Date();
+  // Apple has ~2 day delay; Google we detect dynamically
+  let latest;
+  if (currentStore === 'google' && googleLatestDate) {
+    latest = new Date(googleLatestDate + 'T00:00:00');
+  } else {
+    const delayDays = currentStore === 'apple' ? 2 : 8;
+    latest = new Date(today);
+    latest.setDate(today.getDate() - delayDays);
+  }
+
+  switch (currentPreset) {
+    case 'latest':
+      return { date: dateStr(latest) };
+    case '7days': {
+      const from = new Date(latest);
+      from.setDate(from.getDate() - 6);
+      return { from: dateStr(from), to: dateStr(latest), frequency: 'DAILY' };
+    }
+    case '30days': {
+      const from = new Date(latest);
+      from.setDate(from.getDate() - 29);
+      return { from: dateStr(from), to: dateStr(latest), frequency: 'DAILY' };
+    }
+    case 'thismonth': {
+      if (currentStore === 'google') {
+        const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+        return { from: monthStart, to: dateStr(latest), frequency: 'DAILY' };
+      }
+      const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      return { date: monthStart, frequency: 'MONTHLY' };
+    }
+    case 'lastmonth': {
+      const d = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      if (currentStore === 'google') {
+        const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+        return { from: dateStr(d), to: dateStr(lastDay), frequency: 'DAILY' };
+      }
+      const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return { date: monthStr, frequency: 'MONTHLY' };
+    }
+    case 'alltime': {
+      return {}; // dedicated endpoint handles it
+    }
+    case 'custom': {
+      const f = document.getElementById('date-from').value;
+      const t = document.getElementById('date-to').value;
+      if (!f || !t) { alert('Please select both dates'); return null; }
+      return { from: f, to: t, frequency: 'SMART' };
+    }
+    default:
+      return { date: dateStr(latest) };
+  }
+}
+
+// ── Fetch Apple apps ────────────────────
+async function loadAppleApps() {
+  try {
+    const res = await fetch('/api/apps');
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    appleAppsData = data.apps;
+    const container = document.getElementById('apple-apps-list');
+    document.getElementById('apple-apps-count').textContent = `${data.count} app${data.count !== 1 ? 's' : ''}`;
+
+    if (data.apps.length === 0) {
+      container.innerHTML = '<div class="empty">No apps found in your App Store Connect account.</div>';
+      return;
+    }
+
+    container.className = 'apps-grid';
+    container.innerHTML = data.apps.map(app => `
+      <div class="app-card">
+        <div class="app-icon" style="background:linear-gradient(135deg, ${appColor(app.name)}, ${appColor(app.name + 'x')})">${app.name[0]}</div>
+        <div class="info">
+          <h3>${esc(app.name)}</h3>
+          <p>${esc(app.bundleId)}</p>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('apple-apps-list').innerHTML =
+      `<div class="empty" style="color:#c62828">Failed to load apps: ${esc(err.message)}</div>`;
+  }
+}
+
+// ── Fetch Google Play apps ──────────────
+async function loadGoogleApps() {
+  try {
+    const res = await fetch('/api/google/apps');
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    googleAppsData = data.apps;
+    // GCS connected — hide setup instructions, show status badge
+    document.getElementById('gsutil-info').style.display = 'none';
+    document.getElementById('gcs-status-badge').style.display = 'flex';
+    const container = document.getElementById('google-apps-list');
+    const sourceMap = { reporting_api: 'Reporting API', publisher_api: 'Publisher API', gcs: 'GCS Bucket' };
+    const sourceLabel = sourceMap[data.source] ? ` (via ${sourceMap[data.source]})` : '';
+    document.getElementById('google-apps-count').textContent = `${data.count} app${data.count !== 1 ? 's' : ''}${sourceLabel}`;
+
+    if (data.apps.length === 0) {
+      container.innerHTML = '<div class="empty">No apps found.</div>';
+      return;
+    }
+
+    container.className = 'apps-grid';
+    container.innerHTML = data.apps.map(app => `
+      <div class="app-card">
+        <div class="app-icon" style="background:linear-gradient(135deg, ${appColor(app.title)}, ${appColor(app.title + 'x')})">${app.title[0]}</div>
+        <div class="info">
+          <h3>${esc(app.title)}</h3>
+          <p>${esc(app.packageName)}</p>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    // Connection failed — show setup instructions
+    document.getElementById('gsutil-info').style.display = 'flex';
+    document.getElementById('gcs-status-badge').style.display = 'none';
+    document.getElementById('google-apps-list').innerHTML =
+      `<div class="empty" style="color:#c62828">Failed to load Google Play apps: ${esc(err.message)}</div>`;
+  }
+}
+
+
+
+// Client-side prettify
+function prettifyPackageName(pkg) {
+  const parts = pkg.split('.');
+  let name = parts[parts.length - 1];
+  if (['app', 'android', 'main'].includes(name)) name = parts[parts.length - 2] || name;
+  return name.replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ── Render stats data into shared UI ────
+function renderData(data) {
+  document.getElementById('error-banner').style.display = 'none';
+  const isGoogle = currentStore === 'google';
+
+  // Show stats
+  document.getElementById('stats-grid').style.display = '';
+  document.getElementById('total-downloads').textContent = fmt(data.totalDownloads);
+  document.getElementById('total-updates').textContent = fmt(data.totalUpdates);
+  document.getElementById('app-count').textContent = data.appCount;
+
+  // Apple-specific metrics
+  const redownloadsCard = document.getElementById('card-redownloads');
+  const iapCard = document.getElementById('card-iap');
+  const proceedsCard = document.getElementById('card-proceeds');
+  const uninstallsCard = document.getElementById('card-uninstalls');
+
+  if (!isGoogle && data.totalRedownloads > 0) {
+    redownloadsCard.style.display = '';
+    document.getElementById('total-redownloads').textContent = fmt(data.totalRedownloads);
+  } else {
+    redownloadsCard.style.display = 'none';
+  }
+
+  if (!isGoogle && data.totalIAP > 0) {
+    iapCard.style.display = '';
+    document.getElementById('total-iap').textContent = fmt(data.totalIAP);
+  } else {
+    iapCard.style.display = 'none';
+  }
+
+  if (!isGoogle && data.totalProceeds > 0) {
+    proceedsCard.style.display = '';
+    document.getElementById('total-proceeds').textContent = `$${fmt(data.totalProceeds)}`;
+  } else {
+    proceedsCard.style.display = 'none';
+  }
+
+  if (isGoogle && data.totalUninstalls > 0) {
+    uninstallsCard.style.display = '';
+    document.getElementById('total-uninstalls').textContent = fmt(data.totalUninstalls);
+  } else {
+    uninstallsCard.style.display = 'none';
+  }
+
+  // Extra table column header
+  const thExtra = document.getElementById('th-extra');
+  if (isGoogle && data.totalUninstalls > 0) {
+    thExtra.style.display = '';
+    thExtra.textContent = 'Uninstalls';
+  } else if (!isGoogle && data.totalRedownloads > 0) {
+    thExtra.style.display = '';
+    thExtra.textContent = 'Re-Downloads';
+  } else {
+    thExtra.style.display = 'none';
+  }
+
+  const period = data.period;
+  document.getElementById('period-label').textContent =
+    period.date ? period.date :
+    period.from && period.to ? `${period.from} → ${period.to}` : '';
+
+  if (data.topCountries?.length) {
+    const top = data.topCountries[0];
+    document.getElementById('top-country').textContent = `${flag(top.code)} ${top.code}`;
+    document.getElementById('top-country-count').textContent = `${fmt(top.units)} downloads`;
+  } else {
+    document.getElementById('top-country').textContent = '—';
+    document.getElementById('top-country-count').textContent = '';
+  }
+
+  if (data.message) {
+    document.getElementById('error-banner').style.display = '';
+    document.getElementById('error-banner').style.background = '#fffde7';
+    document.getElementById('error-banner').style.borderColor = '#fff9c4';
+    document.getElementById('error-banner').style.color = '#f57f17';
+    document.getElementById('error-banner').textContent = data.message;
+  }
+
+  // Downloads table
+  if (data.apps?.length) {
+    document.getElementById('downloads-table').style.display = '';
+    const tbody = document.getElementById('downloads-body');
+    tbody.innerHTML = data.apps.map((app, i) => {
+      const appName = app.title || app.packageName || 'Unknown';
+      const topC = Object.entries(app.countries || {}).sort((a,b) => b[1]-a[1]);
+      const topCountry = topC[0] ? `${flag(topC[0][0])} ${topC[0][0]} (${fmt(topC[0][1])})` : '—';
+      const countryDetails = topC.map(([c, u]) =>
+        `<span class="mini-country">${flag(c)} ${c}: <span>${fmt(u)}</span></span>`
+      ).join('');
+
+      // Version breakdown (Apple uses .version, Google uses .code)
+      const versions = app.versions || [];
+      const isGoogle = currentStore === 'google';
+      const versionLabel = isGoogle ? 'Installs by Version Code' : 'Installs by Version';
+      const versionHtml = versions.length ? `
+        <div style="margin-top:12px">
+          <strong style="font-size:12px;color:#86868b;text-transform:uppercase;letter-spacing:0.5px">${versionLabel}</strong>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+            ${versions.map(v => {
+              const label = v.version || v.code || '?';
+              const count = v.installs || 0;
+              return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:#f0f0f5;border-radius:6px;font-size:13px">
+              <strong>${isGoogle ? 'v' : ''}${esc(String(label))}</strong> <span style="color:#86868b">${fmt(count)}</span>
+            </span>`;
+            }).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      // Launch date
+      const launchHtml = app.launchDate ? `<span style="color:#86868b;font-size:12px;margin-left:8px" title="Earliest data in Play Console">since ${app.launchDate}</span>` : '';
+
+      // Extra column value
+      const showExtra = isGoogle ? data.totalUninstalls > 0 : data.totalRedownloads > 0;
+      const extraVal = isGoogle ? fmt(app.uninstalls || 0) : fmt(app.redownloads || 0);
+      const extraTd = showExtra ? `<td class="num" style="color:#86868b">${extraVal}</td>` : '';
+      const colSpan = showExtra ? 6 : 5;
+
+      return `
+        <tr>
+          <td>
+            <div class="app-name">
+              <div class="app-icon" style="background:linear-gradient(135deg, ${appColor(appName)}, ${appColor(appName + 'x')})">${appName[0]}</div>
+              <div>
+                ${esc(appName)}${launchHtml}
+              </div>
+            </div>
+          </td>
+          <td class="num" style="font-weight:600">${fmt(app.downloads)}</td>
+          <td class="num" style="color:#86868b">${fmt(app.updates)}</td>
+          ${extraTd}
+          <td class="num">${topCountry}</td>
+          <td><button class="expand-btn" onclick="toggleRow(${i})">Details ▾</button></td>
+        </tr>
+        <tr class="country-details" id="detail-${i}">
+          <td colspan="${colSpan}">
+            <div class="mini-countries">${countryDetails || 'No country data'}</div>
+            ${versionHtml}
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('downloads-table').style.display = 'none';
+  }
+
+  // Top countries
+  if (data.topCountries?.length) {
+    document.getElementById('countries-section').style.display = '';
+    document.getElementById('country-pills').innerHTML = data.topCountries.map(c => `
+      <div class="country-pill">
+        <span class="flag">${flag(c.code)}</span>
+        <span>${c.code}</span>
+        <span class="count">${fmt(c.units)}</span>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('countries-section').style.display = 'none';
+  }
+}
+
+// ── Progress UI helpers ─────────────────
+function generateProgressId() {
+  return 'p' + Math.random().toString(36).substring(2, 10);
+}
+
+function formatElapsed(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m ${s % 60}s`;
+}
+
+const phaseLabels = {
+  starting: 'Starting',
+  downloading: 'Downloading',
+  parsing: 'Processing',
+  aggregating: 'Finalizing',
+  idle: 'Waiting',
+};
+
+function showProgress(phase, message, percent) {
+  const bar = document.getElementById('progress-bar');
+  const status = document.getElementById('progress-status');
+  const phaseEl = document.getElementById('progress-phase');
+  const msgEl = document.getElementById('progress-message');
+  const pctEl = document.getElementById('progress-pct');
+  const elapsedEl = document.getElementById('progress-elapsed');
+
+  bar.style.width = `${percent}%`;
+  status.style.display = 'block';
+  phaseEl.textContent = phaseLabels[phase] || phase;
+  msgEl.textContent = message;
+  pctEl.textContent = percent > 0 ? `${percent}%` : '';
+
+  if (progressStartTime) {
+    elapsedEl.textContent = formatElapsed(Date.now() - progressStartTime);
+  }
+}
+
+function hideProgress() {
+  const bar = document.getElementById('progress-bar');
+  const status = document.getElementById('progress-status');
+  bar.style.width = '100%';
+  setTimeout(() => {
+    bar.style.width = '0%';
+    status.style.display = 'none';
+  }, 400);
+}
+
+function startProgressPolling(progressId) {
+  progressStartTime = Date.now();
+  showProgress('starting', 'Connecting to server...', 2);
+
+  progressTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/progress/${progressId}`);
+      const p = await res.json();
+      if (p.phase && p.phase !== 'idle') {
+        showProgress(p.phase, p.message, p.percent);
+      }
+    } catch (_) {}
+  }, 600);
+}
+
+function stopProgressPolling() {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+  hideProgress();
+  progressStartTime = null;
+}
+
+// ── Fetch download stats ────────────────
+async function fetchDownloads() {
+  const params = getPresetDates();
+  if (!params) return;
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching...';
+
+  document.getElementById('error-banner').style.display = 'none';
+  document.getElementById('stats-grid').style.display = 'none';
+  document.getElementById('downloads-table').style.display = 'none';
+  document.getElementById('countries-section').style.display = 'none';
+
+  const progressId = generateProgressId();
+  const useProgress = currentPreset === 'alltime' || currentPreset === 'custom' || currentPreset === '30days' || currentStore === 'google';
+  if (useProgress) startProgressPolling(progressId);
+
+  try {
+    let url;
+    const isGoogle = currentStore === 'google';
+    const prefix = isGoogle ? '/api/google' : '/api';
+    const pq = useProgress ? `progressId=${progressId}` : '';
+
+    if (currentPreset === 'alltime') {
+      url = `${prefix}/downloads/alltime${pq ? '?' + pq : ''}`;
+    } else if (params.frequency === 'SMART') {
+      url = `${prefix}/downloads/range?from=${params.from}&to=${params.to}${pq ? '&' + pq : ''}`;
+    } else if (isGoogle && params.from && params.to) {
+      // Google always uses date ranges (no MONTHLY/YEARLY frequency)
+      url = `${prefix}/downloads?from=${params.from}&to=${params.to}${pq ? '&' + pq : ''}`;
+    } else {
+      const qs = new URLSearchParams(params).toString();
+      url = `${prefix}/downloads?${qs}${pq ? '&' + pq : ''}`;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    // Track latest available data date for Google
+    if (isGoogle && data.latestDataDate) {
+      googleLatestDate = data.latestDataDate;
+      updateGoogleDataThrough();
+    }
+
+    // Cache and render
+    storeCache[currentStore] = data;
+    renderData(data);
+
+  } catch (err) {
+    document.getElementById('error-banner').style.display = '';
+    document.getElementById('error-banner').style.background = '#fff2f2';
+    document.getElementById('error-banner').style.borderColor = '#ffcdd2';
+    document.getElementById('error-banner').style.color = '#c62828';
+
+    if (currentStore === 'google') {
+      document.getElementById('error-banner').innerHTML =
+        `GCS bucket access failed: ${esc(err.message)}<br>` +
+        `<span style="font-size:12px;margin-top:4px;display:inline-block">Make sure <code>gcloud</code> is installed and authenticated with a Google account that has Play Console access. Run <code>gcloud auth login</code> in your terminal.</span>`;
+    } else {
+      document.getElementById('error-banner').textContent = `Error: ${err.message}`;
+    }
+  } finally {
+    stopProgressPolling();
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Fetch Downloads';
+}
+
+// ── Toggle country details ──────────────
+function toggleRow(i) {
+  document.getElementById(`detail-${i}`).classList.toggle('open');
+}
+
+// ── HTML escape ─────────────────────────
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ── Update Google "data through" indicator ──
+function updateGoogleDataThrough() {
+  const el = document.getElementById('google-data-through');
+  if (googleLatestDate) {
+    el.textContent = `Data through ${googleLatestDate}`;
+    el.style.display = '';
+  }
+}
+
+// ── Status check ────────────────────────
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    document.getElementById('apple-dot').className = `status-dot ${data.configured?.apple ? 'ok' : 'off'}`;
+    document.getElementById('google-dot').className = `status-dot ${data.configured?.google ? 'ok' : 'off'}`;
+
+    // Show setup wizard if nothing is configured
+    if (data.needsSetup) {
+      openSetup();
+    }
+
+    // Update gsutil status badge
+    const badge = document.getElementById('gcs-status-badge');
+    if (data.gsutilAvailable) {
+      badge.style.display = 'flex';
+      badge.style.background = '#e8f5e9';
+      badge.style.color = '#2e7d32';
+      badge.innerHTML = '<span class="status-dot ok"></span> gsutil connected';
+    } else {
+      badge.style.display = 'flex';
+      badge.style.background = '#fff3e0';
+      badge.style.color = '#e65100';
+      badge.innerHTML = '<span class="status-dot off"></span> gsutil not found';
+      document.getElementById('gsutil-info').style.display = 'flex';
+    }
+    // Save latest Google data date
+    if (data.googleLatestDate) {
+      googleLatestDate = data.googleLatestDate;
+      updateGoogleDataThrough();
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// ── Init ────────────────────────────────
+checkStatus();
+loadAppleApps();
+loadGoogleApps();
+// Auto-fetch downloads on page load (Apple is default)
+fetchDownloads();
+
+// Set default date inputs
+const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 2);
+const weekAgo = new Date(yesterday); weekAgo.setDate(weekAgo.getDate() - 6);
+document.getElementById('date-from').value = dateStr(weekAgo);
+document.getElementById('date-to').value = dateStr(yesterday);
+</script>
+
+</body>
+</html>

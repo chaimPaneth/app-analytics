@@ -1,0 +1,9 @@
+node_modules/
+.env
+keys/
+data/
+.DS_Store
+*.p8
+google-service-account.json
+.vscode/
+debug-gcs.js
