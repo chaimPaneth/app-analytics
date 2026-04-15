@@ -38,7 +38,7 @@ Apple and Google each have their own analytics dashboards, but:
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/app-analytics.git
+git clone https://github.com/chaimPaneth/app-analytics.git
 cd app-analytics
 npm install
 npm start
