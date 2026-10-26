@@ -661,6 +661,141 @@
     }
 
     .settings-btn:hover { background: #f0f0f5; color: #1d1d1f; }
+
+    /* ── View Switch (Downloads / Usage) ─ */
+    .header-left { display: flex; align-items: center; gap: 24px; }
+
+    .view-switch {
+      display: flex;
+      background: #f0f0f5;
+      border-radius: 10px;
+      padding: 3px;
+    }
+
+    .view-tab {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: #86868b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .view-tab svg { width: 16px; height: 16px; }
+    .view-tab:hover:not(.active) { color: #1d1d1f; }
+    .view-tab.active { background: #1d1d1f; color: #fff; }
+
+    /* ── Usage View ───────────────────── */
+    .stat-card .delta { font-size: 13px; margin-top: 6px; color: #86868b; }
+    .stat-card .delta strong { font-weight: 600; }
+    .delta-up strong { color: #1a7f37; }
+    .delta-down strong { color: #c62828; }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      margin-bottom: 20px;
+      padding: 16px 24px 12px;
+    }
+
+    .chart-card .table-header { padding: 0 0 12px; border-bottom: none; }
+
+    .chart-legend { display: flex; gap: 16px; font-size: 13px; color: #52514e; }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .chart-legend i { display: inline-block; width: 14px; height: 2px; border-radius: 1px; }
+
+    .chart-wrap { position: relative; }
+    .chart-wrap svg { display: block; width: 100%; overflow: visible; }
+    .chart-wrap .axis { font-size: 11px; fill: #86868b; font-variant-numeric: tabular-nums; }
+    .chart-wrap .grid { stroke: #f0f0f5; stroke-width: 1; }
+    .chart-wrap .direct-label { font-size: 12px; font-weight: 500; fill: #52514e; }
+
+    .chart-tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: #fff;
+      border: 1px solid #e5e5ea;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      padding: 8px 12px;
+      font-size: 12px;
+      display: none;
+      min-width: 140px;
+      z-index: 5;
+    }
+
+    .chart-tooltip .tt-date { color: #86868b; margin-bottom: 4px; }
+    .chart-tooltip .tt-row { display: flex; align-items: center; gap: 8px; line-height: 1.7; }
+    .chart-tooltip .tt-row i { width: 10px; height: 2px; border-radius: 1px; display: inline-block; }
+    .chart-tooltip .tt-row strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+    .chart-tooltip .tt-row span { color: #86868b; }
+
+    .chart-table { margin-top: 8px; font-size: 13px; color: #86868b; }
+    .chart-table summary { cursor: pointer; padding: 4px 0; }
+    .chart-table table { margin-top: 8px; }
+    .chart-table td, .chart-table th { padding: 6px 12px; }
+
+    .usage-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .usage-grid .table-card { margin-bottom: 0; }
+
+    .bar-list { padding: 12px 24px 16px; }
+    .bar-row { display: grid; grid-template-columns: 120px 1fr 70px; gap: 12px; align-items: center; padding: 6px 0; font-size: 14px; }
+    .bar-row .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-row .bar-track { height: 8px; background: #f5f5f7; border-radius: 4px; overflow: hidden; }
+    .bar-row .bar-fill { height: 100%; background: #2a78d6; border-radius: 4px; }
+    .bar-row .bar-value { text-align: right; font-variant-numeric: tabular-nums; color: #52514e; }
+
+    .vitals-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .vitals-badge.good { background: #e8f5e9; color: #1a7f37; }
+    .vitals-badge.bad { background: #fff2f2; color: #c62828; }
+
+    .usage-empty {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      text-align: center;
+      padding: 56px 24px;
+      color: #86868b;
+      margin-bottom: 20px;
+    }
+
+    .usage-empty h2 { color: #1d1d1f; font-size: 20px; margin-bottom: 8px; }
+    .usage-empty p { font-size: 14px; line-height: 1.6; max-width: 520px; margin: 0 auto 16px; }
+
+    .is-refetching { opacity: 0.45; transition: opacity 0.2s; }
+
+    #usage-apps tr { cursor: pointer; }
+    #usage-apps .app-meta { font-size: 12px; color: #86868b; font-weight: 400; }
+
+    @media (max-width: 900px) {
+      .usage-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .header-left { flex-direction: column; gap: 12px; }
+    }
   </style>
 </head>
 <body>
@@ -766,6 +901,35 @@
         <div class="setup-result" id="google-setup-result"></div>
       </div>
 
+      <!-- Usage Analytics Setup -->
+      <div class="setup-section">
+        <h2>📈 Usage Analytics <span style="font-weight:400;color:#86868b;font-size:14px">Google Analytics 4 / Firebase</span></h2>
+        <p class="subtitle">Active users, sessions, engagement, screens and events for iOS + Android. Uses the service account from the Google Play section above. Every GA4 property it can view is discovered automatically — one per Firebase project.</p>
+
+        <div class="setup-field">
+          <label>Limit to Property IDs <span style="color:#86868b;font-weight:400">(optional)</span></label>
+          <input type="text" id="setup-ga4-property" placeholder="Leave empty to auto-discover all properties">
+          <div class="hint">
+            Comma-separated numeric IDs from <a href="https://analytics.google.com/analytics/web/#/a/p/admin/property/settings" target="_blank">GA4 → Admin → Property details</a>
+            (not the G-XXXX Measurement ID).
+          </div>
+        </div>
+
+        <div style="background:#f5f5f7;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;line-height:1.7">
+          <div style="font-weight:600;margin-bottom:4px">One-time access setup</div>
+          1. Enable the <a href="https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com" target="_blank">Google Analytics Data API</a> and <a href="https://console.cloud.google.com/apis/library/analyticsadmin.googleapis.com" target="_blank">Admin API</a> in the service account's Cloud project<br>
+          2. In each Google Analytics account → Admin → <strong>Account access management</strong>, add
+          <code id="setup-sa-email" style="background:#fff;padding:1px 5px;border-radius:4px;font-size:12px">your service account email</code> as a <strong>Viewer</strong> (covers every property in that account)<br>
+          3. <em>Optional:</em> Android crash/ANR rates come from Play Vitals and work automatically once Google Play is configured
+        </div>
+
+        <div class="setup-actions">
+          <button class="setup-btn setup-btn-primary" onclick="saveAnalyticsConfig()">Save Analytics Config</button>
+          <button class="setup-btn setup-btn-secondary" onclick="testAnalyticsConfig()">Test Connection</button>
+        </div>
+        <div class="setup-result" id="analytics-setup-result"></div>
+      </div>
+
       <div style="text-align:center;margin-top:24px">
         <button class="setup-btn setup-btn-success" onclick="finishSetup()" style="padding:12px 40px;font-size:16px">
           Launch Dashboard →
@@ -796,12 +960,24 @@
   </div>
 
   <header>
-    <h1>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m18 20 0-12"/><path d="M6 20V4"/></svg>
-      App Analytics
-    </h1>
+    <div class="header-left">
+      <h1>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="m18 20 0-12"/><path d="M6 20V4"/></svg>
+        App Analytics
+      </h1>
+      <div class="view-switch">
+        <button class="view-tab active" data-view="downloads" onclick="switchView('downloads')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Downloads
+        </button>
+        <button class="view-tab" data-view="usage" onclick="switchView('usage')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+          Usage
+        </button>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:12px">
-      <div class="store-tabs">
+      <div class="store-tabs" id="store-tabs">
         <button class="store-tab active" onclick="switchStore('apple')">
           <span class="status-dot" id="apple-dot"></span>
           Apple App Store
@@ -811,12 +987,20 @@
           Google Play
         </button>
       </div>
+      <div class="store-tabs" id="platform-tabs" style="display:none">
+        <button class="store-tab platform-tab active" data-platform="all" onclick="switchPlatform('all')">
+          <span class="status-dot" id="analytics-dot"></span>
+          All Platforms
+        </button>
+        <button class="store-tab platform-tab" data-platform="iOS" onclick="switchPlatform('iOS')">iOS</button>
+        <button class="store-tab platform-tab" data-platform="Android" onclick="switchPlatform('Android')">Android</button>
+      </div>
       <button class="settings-btn" onclick="openSetup()">⚙ Settings</button>
-    </div>
     </div>
   </header>
 
   <main>
+  <div id="downloads-view">
     <!-- ── Shared Controls ────────────────── -->
     <div class="controls">
       <div class="control-group">
@@ -967,6 +1151,134 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ══ Usage Analytics View ══════════════ -->
+  <div id="usage-view" style="display:none">
+    <div class="controls">
+      <div class="control-group">
+        <label>App</label>
+        <select id="usage-property" onchange="switchProperty(this.value)" style="min-width:200px">
+          <option value="all">All apps</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Date Range</label>
+        <div class="presets">
+          <button class="preset-btn usage-preset" data-preset="7d" onclick="setUsagePreset(this)">Last 7 Days</button>
+          <button class="preset-btn usage-preset active" data-preset="28d" onclick="setUsagePreset(this)">Last 28 Days</button>
+          <button class="preset-btn usage-preset" data-preset="90d" onclick="setUsagePreset(this)">Last 90 Days</button>
+          <button class="preset-btn usage-preset" data-preset="12m" onclick="setUsagePreset(this)">Last 12 Months</button>
+          <button class="preset-btn usage-preset" data-preset="custom" onclick="setUsagePreset(this)">Custom</button>
+        </div>
+      </div>
+      <div class="control-group" id="usage-from-group" style="display:none">
+        <label>From</label>
+        <input type="date" id="usage-from">
+      </div>
+      <div class="control-group" id="usage-to-group" style="display:none">
+        <label>To</label>
+        <input type="date" id="usage-to">
+      </div>
+      <button class="fetch-btn" id="usage-fetch-btn" onclick="fetchUsage()">Fetch Usage</button>
+    </div>
+
+    <div id="usage-error" class="error-banner" style="display:none"></div>
+
+    <div class="usage-empty" id="usage-not-configured" style="display:none">
+      <h2>Connect Google Analytics</h2>
+      <p id="usage-not-configured-text">
+        Usage data (active users, sessions, engagement, screens, events) comes from Google Analytics 4 —
+        the same properties Firebase Analytics writes to for iOS and Android apps.
+        Upload a Google service account in Settings to get started.
+      </p>
+      <button class="setup-btn setup-btn-primary" onclick="openSetup()">Open Settings</button>
+    </div>
+
+    <div id="usage-content" style="display:none">
+      <div class="stats-grid" id="usage-stats"></div>
+
+      <div class="chart-card">
+        <div class="table-header">
+          <h2>Daily Users</h2>
+          <div class="chart-legend">
+            <span><i style="background:#2a78d6"></i>Active users</span>
+            <span><i style="background:#eb6834"></i>New users</span>
+          </div>
+        </div>
+        <div class="chart-wrap" id="usage-chart"></div>
+        <details class="chart-table">
+          <summary>View as table</summary>
+          <table>
+            <thead><tr><th>Date</th><th class="num">Active users</th><th class="num">New users</th><th class="num">Sessions</th></tr></thead>
+            <tbody id="usage-daily-body"></tbody>
+          </table>
+        </details>
+      </div>
+
+      <div class="table-card" id="usage-apps-card" style="display:none">
+        <div class="table-header">
+          <h2>Apps</h2>
+          <span style="color:#86868b;font-size:13px">Click an app to drill in</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30%">App</th>
+              <th class="num">Active Users</th>
+              <th class="num">Change</th>
+              <th class="num">New Users</th>
+              <th class="num">Sessions</th>
+              <th class="num">Engagement / User</th>
+            </tr>
+          </thead>
+          <tbody id="usage-apps"></tbody>
+        </table>
+      </div>
+
+      <div class="usage-grid">
+        <div class="table-card" id="usage-screens-card">
+          <div class="table-header"><h2>Top Screens</h2></div>
+          <table>
+            <thead><tr><th>Screen</th><th class="num">Views</th><th class="num">Users</th></tr></thead>
+            <tbody id="usage-screens"></tbody>
+          </table>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><h2>Top Events</h2></div>
+          <table>
+            <thead><tr><th>Event</th><th class="num">Count</th><th class="num">Users</th></tr></thead>
+            <tbody id="usage-events"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="usage-grid">
+        <div class="table-card">
+          <div class="table-header"><h2>Active Users by Platform</h2></div>
+          <div class="bar-list" id="usage-platforms"></div>
+        </div>
+        <div class="table-card" id="usage-versions-card">
+          <div class="table-header"><h2>Active Users by App Version</h2></div>
+          <div class="bar-list" id="usage-versions"></div>
+        </div>
+      </div>
+
+      <div class="countries-section">
+        <h2>Top Countries by Active Users</h2>
+        <div class="country-pills" id="usage-countries"></div>
+      </div>
+    </div>
+
+    <!-- Android stability from Play Vitals (independent of GA4) -->
+    <div class="table-card" id="vitals-card" style="display:none">
+      <div class="table-header">
+        <h2>Android Stability <span style="font-weight:400;color:#86868b;font-size:13px">via Play Vitals</span></h2>
+        <span id="vitals-through" style="font-size:12px;color:#86868b"></span>
+      </div>
+      <div id="vitals-body"></div>
+    </div>
+  </div>
   </main>
 
 <script>
@@ -999,10 +1311,14 @@ function finishSetup() {
   // Reload everything
   storeCache.apple = null;
   storeCache.google = null;
+  usageCache = {};
+  vitalsCache = {};
+  ga4Properties = null;
   checkStatus();
   loadAppleApps();
   loadGoogleApps();
-  fetchDownloads();
+  if (currentView === 'usage') fetchUsage();
+  else fetchDownloads();
 }
 
 async function loadExistingConfig() {
@@ -1024,6 +1340,8 @@ async function loadExistingConfig() {
       drop.classList.add('has-file');
       document.getElementById('google-key-filename').textContent = '✓ Service account already uploaded';
     }
+    if (config.analytics?.ga4PropertyIds) document.getElementById('setup-ga4-property').value = config.analytics.ga4PropertyIds;
+    if (config.google.serviceAccountEmail) document.getElementById('setup-sa-email').textContent = config.google.serviceAccountEmail;
   } catch (_) {}
 }
 
@@ -1184,6 +1502,62 @@ async function testGoogleConfig() {
   }
 }
 
+async function saveAnalyticsConfig() {
+  const resultEl = document.getElementById('analytics-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.style.display = 'none';
+
+  const ga4PropertyIds = document.getElementById('setup-ga4-property').value.trim();
+
+  try {
+    let res = await fetch('/api/config/analytics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ga4PropertyIds }),
+    });
+    let data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Analytics shares the Google service account — upload it if one is pending
+    if (googleKeyContent) {
+      res = await fetch('/api/config/google/service-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyContent: googleKeyContent }),
+      });
+      data = await res.json();
+      if (data.error) throw new Error(data.error);
+    }
+
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = 'Analytics configuration saved!';
+    loadExistingConfig();
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
+async function testAnalyticsConfig() {
+  const resultEl = document.getElementById('analytics-setup-result');
+  resultEl.className = 'setup-result';
+  resultEl.textContent = 'Testing...';
+  resultEl.style.display = 'block';
+  resultEl.style.background = '#f5f5f7';
+  resultEl.style.color = '#86868b';
+
+  try {
+    const res = await fetch('/api/config/test/analytics', { method: 'POST' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    resultEl.className = 'setup-result ok';
+    resultEl.textContent = data.message;
+  } catch (err) {
+    resultEl.className = 'setup-result err';
+    resultEl.textContent = err.message;
+  }
+}
+
 // ── Country code → flag emoji ────────────
 function flag(code) {
   if (!code || code.length !== 2) return '🌍';
@@ -1208,8 +1582,8 @@ function appColor(name) {
 // ── Store tab switch ────────────────────
 function switchStore(store) {
   currentStore = store;
-  document.querySelectorAll('.store-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.store-tab[onclick="switchStore('${store}')"]`).classList.add('active');
+  document.querySelectorAll('#store-tabs .store-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`#store-tabs .store-tab[onclick="switchStore('${store}')"]`).classList.add('active');
   document.getElementById('apple-panel').style.display = store === 'apple' ? '' : 'none';
   document.getElementById('google-panel').style.display = store === 'google' ? '' : 'none';
 
@@ -1228,7 +1602,7 @@ function switchStore(store) {
 
 // ── Preset buttons ──────────────────────
 function setPreset(btn) {
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#downloads-view .preset-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentPreset = btn.dataset.preset;
 
@@ -1710,6 +2084,544 @@ function updateGoogleDataThrough() {
   }
 }
 
+// ══ Usage Analytics ═════════════════════
+let currentView = 'downloads';
+let currentPlatform = 'all';
+let currentProperty = 'all';
+let ga4Properties = null;    // GA4 properties the service account can view
+let currentUsagePreset = '28d';
+let analyticsConfigured = false;
+let googleConfigured = false;
+let usageCache = {};      // `${platform}|${from}|${to}` → GA4 response
+let vitalsCache = {};     // `${from}|${to}|${packages}` → Play Vitals response
+let latestVitalsKey = null;
+let usageRequestId = 0;   // ignore responses from superseded requests
+let lastChart = null;     // re-rendered on resize
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.toggle('active', t.dataset.view === view));
+  document.getElementById('downloads-view').style.display = view === 'downloads' ? '' : 'none';
+  document.getElementById('usage-view').style.display = view === 'usage' ? '' : 'none';
+  document.getElementById('store-tabs').style.display = view === 'downloads' ? '' : 'none';
+  document.getElementById('platform-tabs').style.display = view === 'usage' ? '' : 'none';
+  history.replaceState(null, '', view === 'usage' ? '#usage' : location.pathname);
+
+  if (view === 'usage') {
+    fetchUsage();
+  } else if (!storeCache[currentStore]) {
+    fetchDownloads();
+  }
+}
+
+function switchPlatform(platform) {
+  currentPlatform = platform;
+  document.querySelectorAll('.platform-tab').forEach(t => t.classList.toggle('active', t.dataset.platform === platform));
+  fetchUsage();
+}
+
+function switchProperty(id) {
+  currentProperty = id;
+  document.getElementById('usage-property').value = id;
+  fetchUsage();
+}
+
+// Discover GA4 properties once; returns a message to show if there are none
+async function loadProperties() {
+  const res = await fetch('/api/analytics/properties');
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  ga4Properties = data.properties;
+
+  const select = document.getElementById('usage-property');
+  select.innerHTML = `<option value="all">All apps (${ga4Properties.length})</option>` +
+    ga4Properties.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  if (currentProperty !== 'all' && !ga4Properties.some(p => p.id === currentProperty)) currentProperty = 'all';
+  select.value = currentProperty;
+  return data.message;
+}
+
+function setUsagePreset(btn) {
+  document.querySelectorAll('.usage-preset').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentUsagePreset = btn.dataset.preset;
+  const showCustom = currentUsagePreset === 'custom';
+  document.getElementById('usage-from-group').style.display = showCustom ? '' : 'none';
+  document.getElementById('usage-to-group').style.display = showCustom ? '' : 'none';
+}
+
+function getUsageDates() {
+  // GA4 data for today is partial, so ranges end yesterday
+  const end = new Date();
+  end.setDate(end.getDate() - 1);
+  const daysBack = { '7d': 6, '28d': 27, '90d': 89, '12m': 364 }[currentUsagePreset];
+  if (daysBack !== undefined) {
+    const from = new Date(end);
+    from.setDate(from.getDate() - daysBack);
+    return { from: dateStr(from), to: dateStr(end) };
+  }
+  const from = document.getElementById('usage-from').value;
+  const to = document.getElementById('usage-to').value;
+  if (!from || !to) { alert('Please select both dates'); return null; }
+  return { from, to };
+}
+
+async function fetchUsage() {
+  const range = getUsageDates();
+  if (!range) return;
+
+  const errorEl = document.getElementById('usage-error');
+  const content = document.getElementById('usage-content');
+  const notConfigured = document.getElementById('usage-not-configured');
+  errorEl.style.display = 'none';
+
+  const showNotConfigured = (message) => {
+    content.style.display = 'none';
+    notConfigured.style.display = '';
+    if (message) document.getElementById('usage-not-configured-text').textContent = message;
+  };
+  if (!analyticsConfigured) {
+    fetchVitals(range);
+    return showNotConfigured();
+  }
+
+  if (!ga4Properties) {
+    try {
+      const message = await loadProperties();
+      if (message) {
+        fetchVitals(range);
+        return showNotConfigured(message);
+      }
+    } catch (err) {
+      fetchVitals(range);
+      return showNotConfigured(`Couldn't list Google Analytics properties: ${err.message}`);
+    }
+  }
+  notConfigured.style.display = 'none';
+
+  // Play Vitals is independent of GA4 — load it alongside
+  fetchVitals(range);
+
+  const key = `${currentProperty}|${currentPlatform}|${range.from}|${range.to}`;
+  if (usageCache[key]) {
+    renderUsage(usageCache[key]);
+    return;
+  }
+
+  const requestId = ++usageRequestId;
+  const btn = document.getElementById('usage-fetch-btn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching...';
+  content.classList.add('is-refetching');
+
+  try {
+    const qs = new URLSearchParams({ ...range, platform: currentPlatform, property: currentProperty }).toString();
+    const res = await fetch(`/api/analytics/usage?${qs}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    usageCache[key] = data;
+    if (requestId === usageRequestId) renderUsage(data);
+  } catch (err) {
+    if (requestId === usageRequestId) {
+      content.style.display = 'none';
+      errorEl.style.display = '';
+      errorEl.textContent = `Google Analytics error: ${err.message}`;
+    }
+  } finally {
+    if (requestId === usageRequestId) {
+      content.classList.remove('is-refetching');
+      btn.disabled = false;
+      btn.textContent = 'Fetch Usage';
+    }
+  }
+}
+
+function formatDuration(seconds) {
+  const s = Math.round(seconds || 0);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+
+function pct(n, digits = 1) {
+  return `${((n || 0) * 100).toFixed(digits)}%`;
+}
+
+// Change vs previous period. mode 'rate' = percentage-point difference.
+function deltaHtml(cur, prev, mode = 'relative') {
+  if (!prev) return '<div class="delta">No prior-period data</div>';
+  const diff = mode === 'rate' ? (cur - prev) * 100 : ((cur - prev) / prev) * 100;
+  if (Math.abs(diff) < 0.05) return '<div class="delta"><strong>— 0%</strong> vs previous period</div>';
+  const up = diff > 0;
+  const label = mode === 'rate' ? `${Math.abs(diff).toFixed(1)} pts` : `${Math.abs(diff).toFixed(1)}%`;
+  return `<div class="delta ${up ? 'delta-up' : 'delta-down'}"><strong>${up ? '▲' : '▼'} ${label}</strong> vs previous period</div>`;
+}
+
+function renderUsage(data) {
+  document.getElementById('usage-content').style.display = '';
+  const t = data.totals;
+  const p = data.previous;
+  const perUser = (v, users) => users ? v / users : 0;
+
+  const tiles = [
+    { label: 'Active Users', value: fmt(t.activeUsers), sub: `${data.period.from} → ${data.period.to}`, delta: deltaHtml(t.activeUsers, p.activeUsers) },
+    { label: 'New Users', value: fmt(t.newUsers), delta: deltaHtml(t.newUsers, p.newUsers) },
+    { label: 'Sessions', value: fmt(t.sessions), delta: deltaHtml(t.sessions, p.sessions) },
+    {
+      label: 'Engagement / User',
+      value: formatDuration(perUser(t.userEngagementDuration, t.activeUsers)),
+      delta: deltaHtml(perUser(t.userEngagementDuration, t.activeUsers), perUser(p.userEngagementDuration, p.activeUsers)),
+    },
+    { label: 'Engagement Rate', value: pct(t.engagementRate), delta: deltaHtml(t.engagementRate, p.engagementRate, 'rate') },
+    {
+      label: 'Sessions / User',
+      value: perUser(t.sessions, t.activeUsers).toFixed(2),
+      delta: deltaHtml(perUser(t.sessions, t.activeUsers), perUser(p.sessions, p.activeUsers)),
+    },
+    data.stickiness ? {
+      label: 'Stickiness (DAU/MAU)',
+      value: pct(data.stickiness.dauPerMau),
+      sub: `DAU ${fmt(data.stickiness.dau)} · MAU ${fmt(data.stickiness.mau)} on ${data.period.to}`,
+    } : null,
+    { label: 'Screen Views', value: fmt(t.screenPageViews), delta: deltaHtml(t.screenPageViews, p.screenPageViews) },
+  ].filter(Boolean);
+
+  document.getElementById('usage-stats').innerHTML = tiles.map(tile => `
+    <div class="stat-card">
+      <div class="label">${tile.label}</div>
+      <div class="value">${tile.value}</div>
+      ${tile.sub ? `<div class="sub">${esc(tile.sub)}</div>` : ''}
+      ${tile.delta || ''}
+    </div>
+  `).join('');
+
+  // Daily trend chart + table view
+  const series = [
+    { name: 'Active users', color: '#2a78d6', values: data.daily.map(d => d.activeUsers) },
+    { name: 'New users', color: '#eb6834', values: data.daily.map(d => d.newUsers) },
+  ];
+  lastChart = { dates: data.daily.map(d => d.date), series };
+  renderLineChart(document.getElementById('usage-chart'), lastChart.dates, lastChart.series);
+  document.getElementById('usage-daily-body').innerHTML = data.daily.slice().reverse().map(d => `
+    <tr><td>${d.date}</td><td class="num">${fmt(d.activeUsers)}</td><td class="num">${fmt(d.newUsers)}</td><td class="num">${fmt(d.sessions)}</td></tr>
+  `).join('');
+
+  const tableRows = (rows, cols) => rows.length
+    ? rows.map(r => `<tr>${cols.map((c, i) => `<td class="${i ? 'num' : ''}">${i ? fmt(r[c]) : esc(r[c] || '(not set)')}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${cols.length}" class="empty">No data</td></tr>`;
+  document.getElementById('usage-screens').innerHTML = tableRows(data.screens, ['unifiedScreenName', 'screenPageViews', 'activeUsers']);
+  document.getElementById('usage-events').innerHTML = tableRows(data.events, ['eventName', 'eventCount', 'totalUsers']);
+
+  // All-apps mode: comparison table instead of per-app screens & versions
+  const isAll = !!data.apps;
+  document.getElementById('usage-apps-card').style.display = isAll ? '' : 'none';
+  for (const id of ['usage-screens-card', 'usage-versions-card']) {
+    const card = document.getElementById(id);
+    card.style.display = isAll ? 'none' : '';
+    card.parentElement.style.gridTemplateColumns = isAll ? '1fr' : '';
+  }
+  if (isAll) renderAppsTable(data.apps);
+
+  renderBarList('usage-platforms', data.platforms.map(r => ({ label: r.platform, value: r.activeUsers })));
+  renderBarList('usage-versions', data.versions.map(r => ({ label: r.appVersion ? `v${r.appVersion}` : '(not set)', value: r.activeUsers })));
+
+  document.getElementById('usage-countries').innerHTML = data.countries.length
+    ? data.countries.map(c => `
+      <div class="country-pill">
+        <span class="flag">${flag(c.code)}</span>
+        <span>${esc(c.code)}</span>
+        <span class="count">${fmt(c.users)}</span>
+      </div>
+    `).join('')
+    : '<span style="color:#86868b;font-size:13px">No country data</span>';
+}
+
+function renderAppsTable(apps) {
+  document.getElementById('usage-apps').innerHTML = apps.map(a => {
+    const t = a.totals;
+    const ids = (a.apps || []).filter(s => s.platform !== 'web').map(s => s.id);
+    const meta = a.error
+      ? `<div class="app-meta" style="color:#c62828">${esc(a.error)}</div>`
+      : ids.length ? `<div class="app-meta">${esc([...new Set(ids)].join(' · '))}</div>` : '';
+    const change = t ? deltaHtml(t.activeUsers, a.previous.activeUsers).replace(' vs previous period', '').replace('No prior-period data', '—') : '—';
+    return `
+      <tr onclick="switchProperty('${esc(a.id)}')">
+        <td>
+          <div class="app-name">
+            <div class="app-icon" style="background:linear-gradient(135deg, ${appColor(a.name)}, ${appColor(a.name + 'x')})">${esc(a.name[0] || '?')}</div>
+            <div>${esc(a.name)}${meta}</div>
+          </div>
+        </td>
+        <td class="num" style="font-weight:600">${t ? fmt(t.activeUsers) : '—'}</td>
+        <td class="num">${change}</td>
+        <td class="num">${t ? fmt(t.newUsers) : '—'}</td>
+        <td class="num">${t ? fmt(t.sessions) : '—'}</td>
+        <td class="num">${t && t.activeUsers ? formatDuration(t.userEngagementDuration / t.activeUsers) : '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderBarList(id, rows) {
+  const el = document.getElementById(id);
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty" style="padding:16px">No data</div>';
+    return;
+  }
+  const max = Math.max(...rows.map(r => r.value), 1);
+  el.innerHTML = rows.map(r => `
+    <div class="bar-row" title="${esc(r.label)}: ${fmt(r.value)}">
+      <div class="bar-label">${esc(r.label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(1, (r.value / max) * 100)}%"></div></div>
+      <div class="bar-value">${fmt(r.value)}</div>
+    </div>
+  `).join('');
+}
+
+// ── Line chart (inline SVG, crosshair tooltip) ──
+function niceStep(max, ticks) {
+  const raw = max / ticks;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  return (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+}
+
+function shortNum(n) {
+  if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
+  if (n >= 1e3) return `${+(n / 1e3).toFixed(1)}k`;
+  return String(n);
+}
+
+function renderLineChart(el, dates, series) {
+  el.innerHTML = '';
+  if (!dates.length) {
+    el.innerHTML = '<div class="empty">No daily data for this range</div>';
+    return;
+  }
+
+  const W = el.clientWidth || 800;
+  const H = 260;
+  const m = { top: 12, right: 100, bottom: 28, left: 44 };
+  const iw = W - m.left - m.right;
+  const ih = H - m.top - m.bottom;
+  const n = dates.length;
+  const step = niceStep(Math.max(1, ...series.flatMap(s => s.values)), 4);
+  const yMax = step * 4;
+  const x = i => m.left + (n === 1 ? iw / 2 : (i / (n - 1)) * iw);
+  const y = v => m.top + ih - (v / yMax) * ih;
+  const longRange = n > 120;
+  const fmtDate = (d, long) => new Date(d + 'T00:00:00').toLocaleDateString(undefined,
+    long ? { month: 'short', year: 'numeric' } : { month: 'short', day: 'numeric' });
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" height="${H}" tabindex="0" role="img" aria-label="Daily active and new users">`;
+
+  // Recessive grid + y-axis labels
+  for (let i = 0; i <= 4; i++) {
+    const v = step * i;
+    svg += `<line class="grid" x1="${m.left}" x2="${m.left + iw}" y1="${y(v)}" y2="${y(v)}"/>`;
+    svg += `<text class="axis" x="${m.left - 8}" y="${y(v) + 4}" text-anchor="end">${shortNum(v)}</text>`;
+  }
+
+  // ~6 evenly spaced x labels
+  const labelCount = Math.min(n, Math.max(2, Math.floor(iw / 110)));
+  const labelIdx = new Set(Array.from({ length: labelCount }, (_, i) => Math.round(i * (n - 1) / Math.max(1, labelCount - 1))));
+  for (const i of labelIdx) {
+    const anchor = n === 1 ? 'middle' : i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle';
+    svg += `<text class="axis" x="${x(i)}" y="${H - 8}" text-anchor="${anchor}">${fmtDate(dates[i], longRange)}</text>`;
+  }
+
+  // Lines (2px), markers only when a lone point would be invisible
+  for (const s of series) {
+    const d = s.values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (n === 1) svg += `<circle cx="${x(0)}" cy="${y(s.values[0])}" r="4" fill="${s.color}" stroke="#fff" stroke-width="2"/>`;
+  }
+
+  // Direct labels at line ends, nudged apart if they collide
+  const ends = series.map(s => ({ name: s.name, y: y(s.values[n - 1]) })).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) {
+    if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+  }
+  for (const e of ends) {
+    svg += `<text class="direct-label" x="${x(n - 1) + 8}" y="${e.y + 4}">${esc(e.name)}</text>`;
+  }
+
+  // Hover layer
+  svg += `<line id="chart-crosshair" y1="${m.top}" y2="${m.top + ih}" stroke="#86868b" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>`;
+  series.forEach((s, si) => {
+    svg += `<circle class="chart-dot" data-series="${si}" r="4" fill="${s.color}" stroke="#fff" stroke-width="2" style="display:none"/>`;
+  });
+  svg += `<rect x="${m.left}" y="${m.top}" width="${iw}" height="${ih}" fill="transparent" id="chart-hit"/>`;
+  svg += '</svg>';
+  el.innerHTML = svg;
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'chart-tooltip';
+  el.appendChild(tooltip);
+
+  const svgEl = el.querySelector('svg');
+  const crosshair = el.querySelector('#chart-crosshair');
+  const dots = el.querySelectorAll('.chart-dot');
+  let activeIdx = null;
+
+  function show(i) {
+    activeIdx = i;
+    const cx = x(i);
+    crosshair.setAttribute('x1', cx);
+    crosshair.setAttribute('x2', cx);
+    crosshair.style.display = '';
+    dots.forEach(dot => {
+      const s = series[dot.dataset.series];
+      dot.setAttribute('cx', cx);
+      dot.setAttribute('cy', y(s.values[i]));
+      dot.style.display = '';
+    });
+
+    tooltip.replaceChildren();
+    const dateEl = document.createElement('div');
+    dateEl.className = 'tt-date';
+    dateEl.textContent = new Date(dates[i] + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    tooltip.appendChild(dateEl);
+    for (const s of series) {
+      const row = document.createElement('div');
+      row.className = 'tt-row';
+      const key = document.createElement('i');
+      key.style.background = s.color;
+      const val = document.createElement('strong');
+      val.textContent = fmt(s.values[i]);
+      const name = document.createElement('span');
+      name.textContent = s.name;
+      row.append(key, val, name);
+      tooltip.appendChild(row);
+    }
+    tooltip.style.display = 'block';
+    // Keep the tooltip inside the chart: flip to the left of the crosshair near the right edge
+    const scale = svgEl.getBoundingClientRect().width / W;
+    const px = cx * scale;
+    const left = px + 12 + tooltip.offsetWidth > el.clientWidth ? px - 12 - tooltip.offsetWidth : px + 12;
+    tooltip.style.left = `${Math.max(0, left)}px`;
+    tooltip.style.top = `${m.top * scale}px`;
+  }
+
+  function hide() {
+    activeIdx = null;
+    crosshair.style.display = 'none';
+    dots.forEach(dot => { dot.style.display = 'none'; });
+    tooltip.style.display = 'none';
+  }
+
+  svgEl.addEventListener('pointermove', (e) => {
+    const rect = svgEl.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (W / rect.width);
+    const i = n === 1 ? 0 : Math.round(((px - m.left) / iw) * (n - 1));
+    show(Math.max(0, Math.min(n - 1, i)));
+  });
+  svgEl.addEventListener('pointerleave', hide);
+  svgEl.addEventListener('focus', () => show(n - 1));
+  svgEl.addEventListener('blur', hide);
+  svgEl.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const next = (activeIdx ?? n - 1) + (e.key === 'ArrowRight' ? 1 : -1);
+    show(Math.max(0, Math.min(n - 1, next)));
+  });
+}
+
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (lastChart && currentView === 'usage') {
+      renderLineChart(document.getElementById('usage-chart'), lastChart.dates, lastChart.series);
+    }
+  }, 150);
+});
+
+// ── Play Vitals (Android stability) ─────
+async function fetchVitals(range) {
+  const card = document.getElementById('vitals-card');
+  const property = currentProperty !== 'all' && ga4Properties?.find(p => p.id === currentProperty);
+  const packages = property ? property.apps.filter(a => a.platform === 'Android').map(a => a.id) : [];
+  if (!googleConfigured || currentPlatform === 'iOS' || (property && !packages.length)) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  const query = packages.length ? { ...range, packages: packages.join(',') } : range;
+  const key = `${range.from}|${range.to}|${packages.join(',')}`;
+  latestVitalsKey = key; // only the most recent request may render
+  if (vitalsCache[key]) {
+    renderVitals(vitalsCache[key]);
+    return;
+  }
+
+  const body = document.getElementById('vitals-body');
+  if (!body.querySelector('table')) {
+    body.innerHTML = '<div class="loading"><div class="spinner"></div>Loading crash &amp; ANR rates...</div>';
+  }
+  body.classList.add('is-refetching');
+  try {
+    const res = await fetch(`/api/analytics/vitals?${new URLSearchParams(query)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    vitalsCache[key] = data;
+    // Only render if the user hasn't moved to another range meanwhile
+    if (key === latestVitalsKey) renderVitals(data);
+  } catch (err) {
+    body.innerHTML = `<div class="empty" style="color:#c62828">Play Vitals unavailable: ${esc(err.message)}</div>`;
+  } finally {
+    body.classList.remove('is-refetching');
+  }
+}
+
+function renderVitals(data) {
+  const body = document.getElementById('vitals-body');
+  const th = data.thresholds;
+  const rate = (v) => v === null ? '<span style="color:#86868b">—</span>' : pct(v, 2);
+  const badge = (v, limit) => {
+    if (v === null) return '<span style="color:#86868b">—</span>';
+    const ok = v < limit;
+    return `<span class="vitals-badge ${ok ? 'good' : 'bad'}" title="Google's bad-behavior threshold is ${pct(limit, 2)}">${ok ? '✓' : '⚠'} ${pct(v, 2)}${ok ? '' : ' · over threshold'}</span>`;
+  };
+
+  const through = data.apps.map(a => a.dataThrough).filter(Boolean).sort().pop();
+  document.getElementById('vitals-through').textContent = through ? `Data through ${through}` : '';
+
+  body.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30%">App</th>
+          <th class="num">Avg Daily Users</th>
+          <th class="num">Crash Rate</th>
+          <th class="num" title="Crashes while the user was actively using the app. Threshold ${pct(th.userPerceivedCrashRate, 2)}">User-Perceived Crashes</th>
+          <th class="num">ANR Rate</th>
+          <th class="num" title="ANRs while the user was actively using the app. Threshold ${pct(th.userPerceivedAnrRate, 2)}">User-Perceived ANRs</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.apps.map(a => `
+          <tr>
+            <td>
+              <div class="app-name">
+                <div class="app-icon" style="background:linear-gradient(135deg, ${appColor(a.title)}, ${appColor(a.title + 'x')})">${esc(a.title[0])}</div>
+                <div>${esc(a.title)}${a.error ? `<div style="font-size:12px;color:#c62828;font-weight:400">${esc(a.error)}</div>` : ''}</div>
+              </div>
+            </td>
+            <td class="num">${a.avgDailyUsers ? fmt(a.avgDailyUsers) : '—'}</td>
+            <td class="num">${rate(a.crashRate)}</td>
+            <td class="num">${badge(a.userPerceivedCrashRate, th.userPerceivedCrashRate)}</td>
+            <td class="num">${rate(a.anrRate)}</td>
+            <td class="num">${badge(a.userPerceivedAnrRate, th.userPerceivedAnrRate)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
 // ── Status check ────────────────────────
 async function checkStatus() {
   try {
@@ -1717,6 +2629,9 @@ async function checkStatus() {
     const data = await res.json();
     document.getElementById('apple-dot').className = `status-dot ${data.configured?.apple ? 'ok' : 'off'}`;
     document.getElementById('google-dot').className = `status-dot ${data.configured?.google ? 'ok' : 'off'}`;
+    document.getElementById('analytics-dot').className = `status-dot ${data.configured?.analytics ? 'ok' : 'off'}`;
+    analyticsConfigured = !!data.configured?.analytics;
+    googleConfigured = !!data.configured?.google;
 
     // Show setup wizard if nothing is configured
     if (data.needsSetup) {
@@ -1746,17 +2661,23 @@ async function checkStatus() {
 }
 
 // ── Init ────────────────────────────────
-checkStatus();
 loadAppleApps();
 loadGoogleApps();
-// Auto-fetch downloads on page load (Apple is default)
-fetchDownloads();
+// Usage view needs the configured flags from /api/status before it can fetch
+checkStatus().then(() => {
+  if (location.hash === '#usage') switchView('usage');
+  else fetchDownloads(); // Apple is default
+});
 
 // Set default date inputs
 const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 2);
 const weekAgo = new Date(yesterday); weekAgo.setDate(weekAgo.getDate() - 6);
 document.getElementById('date-from').value = dateStr(weekAgo);
 document.getElementById('date-to').value = dateStr(yesterday);
+const usageEnd = new Date(); usageEnd.setDate(usageEnd.getDate() - 1);
+const usageStart = new Date(usageEnd); usageStart.setDate(usageStart.getDate() - 27);
+document.getElementById('usage-from').value = dateStr(usageStart);
+document.getElementById('usage-to').value = dateStr(usageEnd);
 </script>
 
 </body>

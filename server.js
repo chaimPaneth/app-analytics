@@ -23,12 +23,25 @@ fs.mkdirSync(KEYS_DIR, { recursive: true });
 
 // ── Configuration management ─────────────────────────────────
 function loadConfig() {
+  let config = null;
   if (fs.existsSync(CONFIG_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
     } catch (_) {}
   }
-  // Fall back to env vars for backward compatibility
+  if (!config) config = defaultConfigFromEnv();
+  // Config files saved before usage analytics existed have no analytics block
+  if (!config.analytics) config.analytics = {};
+  // Empty list = auto-discover every property the service account can view
+  if (config.analytics.ga4PropertyIds === undefined) {
+    config.analytics.ga4PropertyIds = config.analytics.ga4PropertyId || process.env.GA4_PROPERTY_IDS || process.env.GA4_PROPERTY_ID || '';
+    delete config.analytics.ga4PropertyId;
+  }
+  return config;
+}
+
+// Fall back to env vars for backward compatibility
+function defaultConfigFromEnv() {
   return {
     apple: {
       issuerId: process.env.APPLE_ISSUER_ID || '',
@@ -60,6 +73,11 @@ function isAppleConfigured() {
 function isGoogleConfigured() {
   const c = getConfig().google;
   return !!(c.developerId && c.serviceAccountFile);
+}
+
+function isAnalyticsConfigured() {
+  // Properties are auto-discovered, so only the shared service account is required
+  return !!getConfig().google.serviceAccountFile;
 }
 
 // ── Progress tracking ────────────────────────────────────────
@@ -97,12 +115,48 @@ app.get('/api/config', (req, res) => {
       developerId: config.google.developerId || '',
       hasServiceAccount: !!(config.google.serviceAccountFile && fs.existsSync(path.resolve(config.google.serviceAccountFile))),
       packages: config.google.packages || '',
+      serviceAccountEmail: getServiceAccountEmail(),
+    },
+    analytics: {
+      ga4PropertyIds: config.analytics.ga4PropertyIds || '',
     },
     isConfigured: {
       apple: isAppleConfigured(),
       google: isGoogleConfigured(),
+      analytics: isAnalyticsConfigured(),
     },
   });
+});
+
+app.post('/api/config/analytics', (req, res) => {
+  const ids = String(req.body.ga4PropertyIds || '').split(',').map(id => id.trim()).filter(Boolean);
+  const invalid = ids.find(id => !/^[0-9]+$/.test(id));
+  if (invalid) {
+    return res.status(400).json({ error: `"${invalid}" is not a GA4 Property ID. Use numeric IDs (e.g. 123456789), not Measurement IDs (G-XXXX).` });
+  }
+
+  const config = getConfig();
+  config.analytics.ga4PropertyIds = ids.join(',');
+  saveConfig(config);
+  _ga4PropertiesCache = null;
+
+  res.json({ ok: true });
+});
+
+app.post('/api/config/test/analytics', async (req, res) => {
+  try {
+    if (!isAnalyticsConfigured()) {
+      return res.status(400).json({ error: 'Usage analytics needs the Google service account (upload it in the Google Play section).' });
+    }
+    _ga4PropertiesCache = null;
+    const properties = await getGA4Properties();
+    if (properties.length === 0) {
+      return res.status(400).json({ error: noPropertiesMessage() });
+    }
+    res.json({ ok: true, message: `Connected! Found ${properties.length} GA4 propert${properties.length === 1 ? 'y' : 'ies'}.` });
+  } catch (err) {
+    res.status(400).json({ error: `GA4 test failed: ${ga4ErrorMessage(err)}` });
+  }
 });
 
 app.post('/api/config/apple', (req, res) => {
@@ -1651,11 +1705,481 @@ app.get('/api/google/downloads/range', async (req, res) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════
+// ── USAGE ANALYTICS (GA4 / Firebase + Play Vitals) ───────────
+// ══════════════════════════════════════════════════════════════
+
+function getServiceAccountEmail() {
+  const saFile = getConfig().google.serviceAccountFile;
+  if (!saFile) return '';
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(saFile), 'utf8')).client_email || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function ga4ErrorMessage(err) {
+  const msg = err.response?.data?.error?.message || err.errors?.[0]?.message || err.message;
+  if (/has not been used|is disabled/i.test(msg)) {
+    return `${msg} — enable the "Google Analytics Data API" and "Google Analytics Admin API" in the service account's Google Cloud project.`;
+  }
+  if (/permission/i.test(msg)) {
+    return `${msg} — add ${getServiceAccountEmail() || 'the service account'} as a Viewer in Google Analytics → Admin → Account access management.`;
+  }
+  return msg;
+}
+
+function noPropertiesMessage() {
+  return `The service account ${getServiceAccountEmail() || ''} can't see any GA4 properties yet. ` +
+    'In each Google Analytics account, open Admin → Account access management and add it as a Viewer ' +
+    '(account-level access covers every property in that account).';
+}
+
+function ga4Auth() {
+  const auth = getGoogleAuth(['https://www.googleapis.com/auth/analytics.readonly']);
+  if (!auth) throw new Error('Google service account not configured');
+  return auth;
+}
+
+async function runGA4Report(propertyId, requestBody) {
+  const analyticsdata = google.analyticsdata({ version: 'v1beta', auth: ga4Auth() });
+  const { data } = await analyticsdata.properties.runReport({
+    property: `properties/${propertyId}`,
+    requestBody,
+  });
+  return data;
+}
+
+// ── GA4 property discovery ───────────────────────────────────
+// Each Firebase project has its own GA4 property, so list every property the
+// service account can view (optionally narrowed by config) and map app streams.
+let _ga4PropertiesCache = null;
+const GA4_PROPERTIES_TTL = 10 * 60 * 1000;
+
+async function getGA4Properties() {
+  if (_ga4PropertiesCache && Date.now() - _ga4PropertiesCache.at < GA4_PROPERTIES_TTL) {
+    return _ga4PropertiesCache.properties;
+  }
+  const admin = google.analyticsadmin({ version: 'v1beta', auth: ga4Auth() });
+
+  const summaries = [];
+  let pageToken;
+  do {
+    const { data } = await admin.accountSummaries.list({ pageSize: 200, pageToken });
+    summaries.push(...(data.accountSummaries || []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  let properties = summaries.flatMap(a => (a.propertySummaries || []).map(p => ({
+    id: p.property.split('/')[1],
+    name: p.displayName,
+    account: a.displayName,
+  })));
+
+  const only = (getConfig().analytics.ga4PropertyIds || '').split(',').map(id => id.trim()).filter(Boolean);
+  if (only.length) {
+    properties = only.map(id => properties.find(p => p.id === id) || { id, name: `Property ${id}`, account: '' });
+  }
+
+  // App streams tell us which bundle IDs / package names report to each property
+  await Promise.all(properties.map(async (p) => {
+    try {
+      const { data } = await admin.properties.dataStreams.list({ parent: `properties/${p.id}`, pageSize: 50 });
+      p.apps = (data.dataStreams || []).map(s =>
+        s.androidAppStreamData ? { platform: 'Android', id: s.androidAppStreamData.packageName } :
+        s.iosAppStreamData ? { platform: 'iOS', id: s.iosAppStreamData.bundleId } :
+        s.webStreamData ? { platform: 'web', id: s.webStreamData.defaultUri } : null
+      ).filter(Boolean);
+    } catch (_) {
+      p.apps = [];
+    }
+  }));
+
+  properties.sort((a, b) => a.name.localeCompare(b.name));
+  _ga4PropertiesCache = { at: Date.now(), properties };
+  return properties;
+}
+
+// Flatten GA4 rows into plain objects keyed by dimension/metric name
+function ga4Rows(report) {
+  const dims = (report.dimensionHeaders || []).map(h => h.name);
+  const mets = (report.metricHeaders || []).map(h => h.name);
+  return (report.rows || []).map(r => {
+    const row = {};
+    dims.forEach((d, i) => { row[d] = r.dimensionValues[i].value; });
+    mets.forEach((m, i) => { row[m] = Number(r.metricValues[i].value || 0); });
+    return row;
+  });
+}
+
+// Previous period of equal length, ending the day before `from`
+function previousPeriod(from, to) {
+  const f = new Date(from + 'T00:00:00Z');
+  const t = new Date(to + 'T00:00:00Z');
+  const days = Math.round((t - f) / 86400000) + 1;
+  const prevTo = new Date(f.getTime() - 86400000);
+  const prevFrom = new Date(prevTo.getTime() - (days - 1) * 86400000);
+  return { from: prevFrom.toISOString().split('T')[0], to: prevTo.toISOString().split('T')[0] };
+}
+
+const TOTAL_METRICS = [
+  'activeUsers', 'newUsers', 'sessions', 'screenPageViews',
+  'userEngagementDuration', 'engagementRate', 'eventCount', 'averageSessionDuration',
+];
+const ADDITIVE_METRICS = ['activeUsers', 'newUsers', 'sessions', 'screenPageViews', 'userEngagementDuration', 'eventCount'];
+
+// Run every report for one property. Totals are required; breakdowns are optional.
+async function fetchPropertyUsage(propertyId, { from, to, prev, platform, breakdowns = true }) {
+  const dateRanges = [{ startDate: from, endDate: to }];
+  const dimensionFilter = platform && platform !== 'all'
+    ? { filter: { fieldName: 'platform', stringFilter: { value: platform, matchType: 'EXACT' } } }
+    : undefined;
+  const report = body => runGA4Report(propertyId, { dimensionFilter, ...body });
+  const top = (dimension, metrics, limit) => report({
+    dateRanges,
+    dimensions: [{ name: dimension }],
+    metrics: metrics.map(name => ({ name })),
+    orderBys: [{ metric: { metricName: metrics[0] }, desc: true }],
+    limit,
+  });
+  const skip = Promise.resolve({ rows: [] });
+
+  const [totals, daily, stickiness, platforms, countries, events, versions, screens] = await Promise.allSettled([
+    report({
+      dateRanges: [
+        { startDate: from, endDate: to, name: 'current' },
+        { startDate: prev.from, endDate: prev.to, name: 'previous' },
+      ],
+      metrics: TOTAL_METRICS.map(name => ({ name })),
+    }),
+    report({
+      dateRanges,
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'activeUsers' }, { name: 'newUsers' }, { name: 'sessions' }],
+      orderBys: [{ dimension: { dimensionName: 'date' } }],
+      limit: 1000,
+    }),
+    report({
+      dateRanges,
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'active1DayUsers' }, { name: 'active7DayUsers' }, { name: 'active28DayUsers' }],
+      orderBys: [{ dimension: { dimensionName: 'date' }, desc: true }],
+      limit: 1,
+    }),
+    top('platform', ['activeUsers', 'sessions'], 10),
+    top('countryId', ['activeUsers'], 25),
+    top('eventName', ['eventCount', 'totalUsers'], 25),
+    // App versions and screen names only make sense within a single app
+    breakdowns ? top('appVersion', ['activeUsers'], 10) : skip,
+    breakdowns ? top('unifiedScreenName', ['screenPageViews', 'activeUsers'], 15) : skip,
+  ]);
+
+  if (totals.status === 'rejected') throw totals.reason;
+  const optional = (r, label) => {
+    if (r.status === 'fulfilled') return ga4Rows(r.value);
+    console.log(`  GA4 ${propertyId} ${label}: ${ga4ErrorMessage(r.reason)}`);
+    return [];
+  };
+
+  const totalRows = ga4Rows(totals.value);
+  const empty = Object.fromEntries(TOTAL_METRICS.map(m => [m, 0]));
+  const current = { ...empty, ...totalRows.find(r => r.dateRange === 'current') };
+  const previous = { ...empty, ...totalRows.find(r => r.dateRange === 'previous') };
+  delete current.dateRange;
+  delete previous.dateRange;
+
+  const latest = optional(stickiness, 'stickiness')[0];
+  return {
+    totals: current,
+    previous,
+    stickiness: latest ? { dau: latest.active1DayUsers, wau: latest.active7DayUsers, mau: latest.active28DayUsers } : null,
+    daily: optional(daily, 'daily').map(r => ({
+      date: `${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6, 8)}`,
+      activeUsers: r.activeUsers,
+      newUsers: r.newUsers,
+      sessions: r.sessions,
+    })),
+    platforms: optional(platforms, 'platforms'),
+    countries: optional(countries, 'countries').map(r => ({ code: r.countryId, users: r.activeUsers })),
+    events: optional(events, 'events'),
+    versions: optional(versions, 'versions'),
+    screens: optional(screens, 'screens'),
+  };
+}
+
+// Sum totals across properties; rates are re-weighted by sessions
+function mergeTotals(list) {
+  const out = Object.fromEntries(TOTAL_METRICS.map(m => [m, 0]));
+  let engagedSessions = 0;
+  let sessionSeconds = 0;
+  for (const t of list) {
+    for (const m of ADDITIVE_METRICS) out[m] += t[m] || 0;
+    engagedSessions += (t.engagementRate || 0) * (t.sessions || 0);
+    sessionSeconds += (t.averageSessionDuration || 0) * (t.sessions || 0);
+  }
+  out.engagementRate = out.sessions ? engagedSessions / out.sessions : 0;
+  out.averageSessionDuration = out.sessions ? sessionSeconds / out.sessions : 0;
+  return out;
+}
+
+// Sum rows that share a key, keep the top `limit` by `sortBy`
+function mergeRows(lists, key, metrics, sortBy, limit) {
+  const byKey = {};
+  for (const row of lists.flat()) {
+    const k = row[key];
+    if (!byKey[k]) byKey[k] = { [key]: k, ...Object.fromEntries(metrics.map(m => [m, 0])) };
+    for (const m of metrics) byKey[k][m] += row[m] || 0;
+  }
+  return Object.values(byKey).sort((a, b) => b[sortBy] - a[sortBy]).slice(0, limit);
+}
+
+async function mapLimit(items, limit, fn) {
+  const results = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  }));
+  return results;
+}
+
+// ── API: GA4 properties visible to the service account ───────
+app.get('/api/analytics/properties', async (req, res) => {
+  try {
+    if (!isAnalyticsConfigured()) {
+      return res.status(400).json({ error: 'Usage analytics needs the Google service account. Upload it in Settings.' });
+    }
+    if (req.query.refresh) _ga4PropertiesCache = null;
+    const properties = await getGA4Properties();
+    res.json({
+      properties,
+      serviceAccountEmail: getServiceAccountEmail(),
+      message: properties.length ? null : noPropertiesMessage(),
+    });
+  } catch (err) {
+    const message = ga4ErrorMessage(err);
+    console.error('GA4 properties error:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
+// ── API: GA4 usage report (one property or all of them) ──────
+app.get('/api/analytics/usage', async (req, res) => {
+  try {
+    if (!isAnalyticsConfigured()) {
+      return res.status(400).json({ error: 'Usage analytics needs the Google service account. Upload it in Settings.' });
+    }
+    const { from, to, platform, property = 'all' } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Both "from" and "to" query params are required.' });
+    }
+    const prev = previousPeriod(from, to);
+    const base = { period: { from, to }, previousPeriod: prev, platform: platform || 'all', property };
+    const withRatio = s => s ? { ...s, dauPerMau: s.mau ? s.dau / s.mau : 0 } : null;
+
+    if (property !== 'all') {
+      if (!/^[0-9]+$/.test(property)) {
+        return res.status(400).json({ error: 'Invalid property ID.' });
+      }
+      console.log(`GA4 usage: property ${property}, ${from} → ${to} (platform: ${platform || 'all'})`);
+      const u = await fetchPropertyUsage(property, { from, to, prev, platform });
+      return res.json({
+        ...base,
+        ...u,
+        stickiness: withRatio(u.stickiness),
+        countries: u.countries.slice(0, 10),
+        events: u.events.slice(0, 15),
+      });
+    }
+
+    const properties = await getGA4Properties();
+    if (properties.length === 0) {
+      return res.status(403).json({ error: noPropertiesMessage() });
+    }
+
+    console.log(`GA4 usage: all ${properties.length} properties, ${from} → ${to} (platform: ${platform || 'all'})`);
+    const results = await mapLimit(properties, 5, async (p) => {
+      try {
+        return { property: p, usage: await fetchPropertyUsage(p.id, { from, to, prev, platform, breakdowns: false }) };
+      } catch (err) {
+        return { property: p, error: ga4ErrorMessage(err) };
+      }
+    });
+    const ok = results.filter(r => r.usage);
+    if (ok.length === 0) throw new Error(results[0].error);
+
+    const usages = ok.map(r => r.usage);
+    const dailyMerged = mergeRows(usages.map(u => u.daily), 'date', ['activeUsers', 'newUsers', 'sessions'], 'date', 1000)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const stick = usages.map(u => u.stickiness).filter(Boolean);
+
+    res.json({
+      ...base,
+      totals: mergeTotals(usages.map(u => u.totals)),
+      previous: mergeTotals(usages.map(u => u.previous)),
+      // Users of different apps are distinct, so summed DAU/MAU is a fair portfolio ratio
+      stickiness: stick.length ? withRatio({
+        dau: stick.reduce((s, x) => s + x.dau, 0),
+        wau: stick.reduce((s, x) => s + x.wau, 0),
+        mau: stick.reduce((s, x) => s + x.mau, 0),
+      }) : null,
+      daily: dailyMerged,
+      platforms: mergeRows(usages.map(u => u.platforms), 'platform', ['activeUsers', 'sessions'], 'activeUsers', 10),
+      countries: mergeRows(usages.map(u => u.countries), 'code', ['users'], 'users', 10),
+      events: mergeRows(usages.map(u => u.events), 'eventName', ['eventCount', 'totalUsers'], 'eventCount', 15),
+      versions: [],
+      screens: [],
+      apps: results.map(r => ({
+        id: r.property.id,
+        name: r.property.name,
+        apps: r.property.apps,
+        error: r.error || null,
+        totals: r.usage?.totals || null,
+        previous: r.usage?.previous || null,
+      })).sort((a, b) => (b.totals?.activeUsers || 0) - (a.totals?.activeUsers || 0)),
+    });
+  } catch (err) {
+    const message = ga4ErrorMessage(err);
+    console.error('GA4 usage error:', message);
+    res.status(err.code && err.code >= 400 && err.code < 600 ? err.code : 500).json({ error: message });
+  }
+});
+
+// ── Play Vitals (crash & ANR rates) ──────────────────────────
+// Google's "bad behavior" thresholds for user-perceived rates
+const VITALS_THRESHOLDS = { userPerceivedCrashRate: 0.0109, userPerceivedAnrRate: 0.0047 };
+
+function toPlayDate(str) {
+  const [year, month, day] = str.split('-').map(Number);
+  // DAILY vitals only support the America/Los_Angeles timezone
+  return { year, month, day, timeZone: { id: 'America/Los_Angeles' } };
+}
+
+function playDateKey(d) {
+  return d.year * 10000 + d.month * 100 + d.day;
+}
+
+// Query one vitals metric set and reduce it to user-weighted averages
+async function queryVitalsMetricSet(resource, name, metrics, from, to) {
+  const metricSet = await resource.get({ name });
+  const freshness = metricSet.data.freshnessInfo?.freshnesses?.find(f => f.aggregationPeriod === 'DAILY');
+
+  // endTime is exclusive: the day after `to`, clamped to the latest available data
+  const toDate = new Date(to + 'T00:00:00Z');
+  toDate.setUTCDate(toDate.getUTCDate() + 1);
+  let endTime = toPlayDate(toDate.toISOString().split('T')[0]);
+  const latest = freshness?.latestEndTime;
+  if (latest && playDateKey(latest) < playDateKey(endTime)) {
+    endTime = { year: latest.year, month: latest.month, day: latest.day, timeZone: { id: 'America/Los_Angeles' } };
+  }
+  const startTime = toPlayDate(from);
+  if (playDateKey(startTime) >= playDateKey(endTime)) return null;
+
+  const rows = [];
+  let pageToken;
+  do {
+    const { data } = await resource.query({
+      name,
+      requestBody: {
+        timelineSpec: { aggregationPeriod: 'DAILY', startTime, endTime },
+        metrics: [...metrics, 'distinctUsers'],
+        pageSize: 1000,
+        pageToken,
+      },
+    });
+    rows.push(...(data.rows || []));
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  // Rates are fractions of distinct users; weight each day by its user count
+  const sums = Object.fromEntries(metrics.map(m => [m, 0]));
+  let userDays = 0;
+  for (const row of rows) {
+    const values = Object.fromEntries(row.metrics.map(m => [m.metric, Number(m.decimalValue?.value || 0)]));
+    const users = values.distinctUsers || 0;
+    userDays += users;
+    for (const m of metrics) sums[m] += (values[m] || 0) * users;
+  }
+  if (!userDays) return null;
+
+  const result = { avgDailyUsers: Math.round(userDays / rows.length) };
+  for (const m of metrics) result[m] = sums[m] / userDays;
+  // endTime is exclusive, so the last day with data is the day before
+  const lastDay = new Date(Date.UTC(endTime.year, endTime.month - 1, endTime.day - 1));
+  result.dataThrough = lastDay.toISOString().split('T')[0];
+  return result;
+}
+
+// ── API: Play Vitals per Android app ─────────────────────────
+app.get('/api/analytics/vitals', async (req, res) => {
+  try {
+    if (!isGoogleConfigured()) {
+      return res.status(400).json({ error: 'Google Play not configured.' });
+    }
+    const { from, to } = req.query;
+    if (!from || !to) {
+      return res.status(400).json({ error: 'Both "from" and "to" query params are required.' });
+    }
+
+    let apps;
+    try {
+      apps = await discoverAppsViaReportingAPI();
+    } catch (_) {
+      apps = GOOGLE_PACKAGES.map(packageName => ({ packageName, title: prettifyPackageName(packageName) }));
+    }
+    // Optional filter, e.g. the Android package(s) of the GA4 property being viewed
+    const only = (req.query.packages || '').split(',').map(p => p.trim()).filter(Boolean);
+    if (only.length) {
+      apps = only.map(pkg => apps.find(a => a.packageName === pkg) || { packageName: pkg, title: prettifyPackageName(pkg) });
+    }
+    if (apps.length === 0) {
+      return res.status(400).json({ error: 'No Google Play apps found for the Reporting API.' });
+    }
+
+    const auth = getGoogleAuth(['https://www.googleapis.com/auth/playdeveloperreporting']);
+    const reporting = google.playdeveloperreporting({ version: 'v1beta1', auth });
+
+    console.log(`Play Vitals: ${apps.length} app(s), ${from} → ${to}`);
+    const results = await Promise.all(apps.map(async (a) => {
+      const base = `apps/${a.packageName}`;
+      const [crash, anr] = await Promise.allSettled([
+        queryVitalsMetricSet(reporting.vitals.crashrate, `${base}/crashRateMetricSet`, ['crashRate', 'userPerceivedCrashRate'], from, to),
+        queryVitalsMetricSet(reporting.vitals.anrrate, `${base}/anrRateMetricSet`, ['anrRate', 'userPerceivedAnrRate'], from, to),
+      ]);
+      const errors = [crash, anr].filter(r => r.status === 'rejected').map(r => r.reason.message);
+      if (errors.length) console.log(`  Vitals ${a.packageName}: ${errors.join('; ')}`);
+      const c = crash.value || null;
+      const n = anr.value || null;
+      return {
+        packageName: a.packageName,
+        title: a.title,
+        avgDailyUsers: c?.avgDailyUsers || n?.avgDailyUsers || 0,
+        crashRate: c?.crashRate ?? null,
+        userPerceivedCrashRate: c?.userPerceivedCrashRate ?? null,
+        anrRate: n?.anrRate ?? null,
+        userPerceivedAnrRate: n?.userPerceivedAnrRate ?? null,
+        dataThrough: c?.dataThrough || n?.dataThrough || null,
+        error: !c && !n && errors.length ? errors[0] : null,
+      };
+    }));
+
+    results.sort((a, b) => b.avgDailyUsers - a.avgDailyUsers);
+    res.json({ period: { from, to }, thresholds: VITALS_THRESHOLDS, apps: results });
+  } catch (err) {
+    console.error('Play Vitals error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/status', async (req, res) => {
   const configured = {
     apple: isAppleConfigured(),
     google: isGoogleConfigured(),
+    analytics: isAnalyticsConfigured(),
   };
   const gsutilAvailable = GSUTIL_PATH !== 'gsutil' || (() => {
     try { require('child_process').execFileSync('gsutil', ['version'], { timeout: 3000, stdio: 'pipe' }); return true; } catch (_) { return false; }
