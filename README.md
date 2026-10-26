@@ -1,6 +1,6 @@
 # App Analytics Dashboard
 
-> Self-hosted, open-source download analytics for **Apple App Store** and **Google Play** — unified in a single dashboard. Your keys never leave your machine.
+> Self-hosted, open-source download **and usage** analytics for **Apple App Store** and **Google Play** — unified in a single dashboard. Your keys never leave your machine.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org)
@@ -27,6 +27,11 @@ Apple and Google each have their own analytics dashboards, but:
   - Installs, updates, uninstalls (Google)
   - In-app purchases & developer proceeds (Apple)
   - Breakdowns by country, app version, and time period
+- **Usage analytics** (Downloads ↔ Usage switch in the header):
+  - Active/new users, sessions, engagement time & rate, DAU/MAU stickiness — from Google Analytics 4 / Firebase
+  - Daily users trend, top screens, top events, platform & app-version breakdowns, countries
+  - All apps (auto-discovered GA4 properties) or drill into one; filter by All / iOS / Android; change vs the previous period
+  - Android crash & ANR rates per app from Play Vitals, flagged against Google's bad-behavior thresholds
 - **Smart date ranges** — auto-picks yearly/monthly/daily reports for speed
 - **All-time history** — fetch data back to 2010
 - **Real-time progress** — live progress bar for long fetches
@@ -192,6 +197,26 @@ https://play.google.com/console/developers/1234567890123456789/...
 
 </details>
 
+### Usage Analytics (Google Analytics 4 / Firebase)
+
+<details>
+<summary><strong>Step-by-step guide (click to expand)</strong></summary>
+
+Usage data comes from GA4, where Firebase Analytics writes. Each Firebase project usually has its **own** GA4 property; the dashboard auto-discovers every property the Google Play service account can view and shows an **All apps** total plus a per-app picker.
+
+1. Enable the [Google Analytics Data API](https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com) and [Google Analytics Admin API](https://console.cloud.google.com/apis/library/analyticsadmin.googleapis.com) in the service account's Cloud project:
+   ```bash
+   gcloud services enable analyticsdata.googleapis.com analyticsadmin.googleapis.com --project YOUR_PROJECT
+   ```
+2. In each Google Analytics **account** → Admin → **Account access management**, add the service account email as a **Viewer**. Account-level access covers every property in that account. (Per-property access via Property access management also works.)
+3. Open **⚙ Settings → Usage Analytics → Test Connection**. Optionally limit to specific property IDs there (or `GA4_PROPERTY_IDS` in `.env`).
+
+> Find which GA4 property a Firebase project uses: Firebase console → Project settings → Integrations → Google Analytics.
+
+**Play Vitals** (Android crash/ANR rates) needs no extra setup — it uses the Play Developer Reporting API with the same service account.
+
+</details>
+
 ---
 
 ## Analytics Tracked
@@ -218,6 +243,18 @@ https://play.google.com/console/developers/1234567890123456789/...
 | **By Country** | Installs broken down by country |
 | **By Version Code** | Installs per APK/AAB version code |
 | **Launch Date** | Earliest data available per app |
+
+### Usage (GA4 / Firebase + Play Vitals)
+
+| Metric | Source | Description |
+|--------|--------|-------------|
+| **Active / New Users** | GA4 | Users with an engaged session / first open in the range |
+| **Sessions, Sessions per User** | GA4 | Session volume and frequency |
+| **Engagement / User, Engagement Rate** | GA4 | Foreground time per user; share of engaged sessions |
+| **Stickiness (DAU/MAU)** | GA4 | 1-day ÷ 28-day active users on the last day of the range |
+| **Top Screens / Events** | GA4 | `unifiedScreenName` views and `eventName` counts |
+| **Platform, App Version, Country** | GA4 | Active users broken down by each |
+| **Crash & ANR Rates** | Play Vitals | User-weighted averages per Android app; user-perceived rates flagged above 1.09% / 0.47% |
 
 ---
 
@@ -307,7 +344,7 @@ app-analytics/
 <details>
 <summary><strong>Is my data sent anywhere?</strong></summary>
 
-No. The server only communicates with Apple's App Store Connect API and Google's Cloud Storage (to download your own reports). No telemetry, no analytics, no third-party services.
+No. The server only communicates with Apple's App Store Connect API and Google's APIs (Cloud Storage for your reports, Play Developer Reporting, and — if configured — the GA4 Data API). No telemetry, no analytics, no third-party services.
 </details>
 
 <details>
