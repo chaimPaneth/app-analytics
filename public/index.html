@@ -2131,7 +2131,9 @@ async function loadProperties() {
   const res = await fetch('/api/analytics/properties');
   const data = await res.json();
   if (data.error) throw new Error(data.error);
-  ga4Properties = data.properties;
+  // Leave unset when empty so the next fetch retries discovery
+  ga4Properties = data.properties.length ? data.properties : null;
+  if (!ga4Properties) return data.message;
 
   const select = document.getElementById('usage-property');
   select.innerHTML = `<option value="all">All apps (${ga4Properties.length})</option>` +

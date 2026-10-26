@@ -1796,8 +1796,13 @@ async function getGA4Properties() {
     }
   }));
 
+  // GA accounts also hold website properties (and rollups that double-count them);
+  // unless IDs were listed explicitly, keep only properties with an iOS/Android app stream
+  if (!only.length) properties = properties.filter(p => p.apps.some(a => a.platform !== 'web'));
+
   properties.sort((a, b) => a.name.localeCompare(b.name));
-  _ga4PropertiesCache = { at: Date.now(), properties };
+  // Don't cache an empty list: access granted in GA should show up on the next request
+  if (properties.length) _ga4PropertiesCache = { at: Date.now(), properties };
   return properties;
 }
 
